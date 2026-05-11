@@ -5,10 +5,10 @@ package db_lab;
 
 import static org.assertj.core.api.Assertions.*;
 
-import db_lab.data.DAOUtils;
-import db_lab.data.Material;
-import db_lab.data.Product;
-import db_lab.data.ProductPreview;
+import db_lab.data.DAODetenuto;
+import db_lab.data.Visitatore;
+import db_lab.data.Personale;
+import db_lab.data.Detenuto;
 import db_lab.data.Tag;
 import db_lab.model.Model;
 import java.sql.Connection;
@@ -28,7 +28,7 @@ public final class AppTest {
 
     @BeforeClass
     public static void setup() throws SQLException {
-        connection = DAOUtils.localMySQLConnection("tessiland", "root", "");
+        connection = DAODetenuto.localMySQLConnection("tessiland", "root", "");
 
         // We do everything inside a transaction so that we won't pollute the
         // database with test data.
@@ -62,32 +62,32 @@ public final class AppTest {
 
     @Test
     public void productComposition() {
-        var actual = Material.DAO.forProduct(connection, 1);
+        var actual = Visitatore.DAO.forProduct(connection, 1);
         var expected = Map.ofEntries(
-            Map.entry(new Material(1, "linen"), 0.6f),
-            Map.entry(new Material(2, "cotton"), 0.4f)
+            Map.entry(new Visitatore(1, "linen"), 0.6f),
+            Map.entry(new Visitatore(2, "cotton"), 0.4f)
         );
         assertThat(actual).isEqualTo(expected);
     }
 
     @Test
     public void productPreviews() {
-        var actual = ProductPreview.DAO.list(connection);
+        var actual = Detenuto.DAO.list(connection);
         var expected = List.of(
-            new ProductPreview(1, "a", Set.of(new Tag("tag1"), new Tag("tag2"))),
-            new ProductPreview(2, "b", Set.of())
+            new Detenuto(1, "a", Set.of(new Tag("tag1"), new Tag("tag2"))),
+            new Detenuto(2, "b", Set.of())
         );
         assertThat(actual).hasSameElementsAs(expected);
     }
 
     @Test
     public void product() {
-        var actual = Product.DAO.find(connection, 1);
+        var actual = Personale.DAO.find(connection, 1);
         var expectedComposition = Map.ofEntries(
-            Map.entry(new Material(1, "linen"), 0.6f),
-            Map.entry(new Material(2, "cotton"), 0.4f)
+            Map.entry(new Visitatore(1, "linen"), 0.6f),
+            Map.entry(new Visitatore(2, "cotton"), 0.4f)
         );
-        var expected = new Product(1, "a", "description a", expectedComposition);
+        var expected = new Personale(1, "a", "description a", expectedComposition);
         assertThat(actual).isPresent().hasValue(expected);
     }
 }

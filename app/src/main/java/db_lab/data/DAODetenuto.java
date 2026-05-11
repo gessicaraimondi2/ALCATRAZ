@@ -5,7 +5,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
-public final class DAOUtils {
+public final class DAODetenuto {
 
     // Establishes a connection to a MySQL daemon running locally at port 3306.
     //
@@ -16,7 +16,7 @@ public final class DAOUtils {
             var connectionString = "jdbc:mysql://" + host + ":" + port + "/" + database;
             return DriverManager.getConnection(connectionString, username, password);
         } catch (Exception e) {
-            throw new DAOException(e);
+            throw new DAOVisitatore(e);
         }
     }
 

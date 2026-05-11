@@ -3,7 +3,7 @@ package db_lab.data;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public final class Printer {
+public final class Amministratore {
 
     public static class Field {
 

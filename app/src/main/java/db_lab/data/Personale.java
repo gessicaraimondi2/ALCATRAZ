@@ -8,14 +8,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-public final class Product {
+public final class Personale {
 
     public final int code;
     public final String name;
     public final String description;
-    public final Map<Material, Float> composition;
+    public final Map<Visitatore, Float> composition;
 
-    public Product(int code, String name, String description, Map<Material, Float> composition) {
+    public Personale(int code, String name, String description, Map<Visitatore, Float> composition) {
         this.code = code;
         this.name = name;
         this.description = description == null ? "" : description;
@@ -28,8 +28,8 @@ public final class Product {
             return true;
         } else if (other == null) {
             return false;
-        } else if (other instanceof Product) {
-            var p = (Product) other;
+        } else if (other instanceof Personale) {
+            var p = (Personale) other;
             return (
                 p.code == this.code &&
                 p.name.equals(this.name) &&
@@ -48,20 +48,20 @@ public final class Product {
 
     @Override
     public String toString() {
-        return Printer.stringify(
+        return Amministratore.stringify(
             "Product",
             List.of(
-                Printer.field("code", this.code),
-                Printer.field("name", this.name),
-                Printer.field("description", this.description),
-                Printer.field("composition", this.composition)
+                Amministratore.field("code", this.code),
+                Amministratore.field("name", this.name),
+                Amministratore.field("description", this.description),
+                Amministratore.field("composition", this.composition)
             )
         );
     }
 
     public static final class DAO {
 
-        public static Optional<Product> find(Connection connection, int productId) {
+        public static Optional<Personale> find(Connection connection, int productId) {
             throw new UnsupportedOperationException("Unimplemented");
         }
     }

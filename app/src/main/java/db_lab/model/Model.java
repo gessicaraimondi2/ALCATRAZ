@@ -1,19 +1,19 @@
 package db_lab.model;
 
-import db_lab.data.Product;
-import db_lab.data.ProductPreview;
+import db_lab.data.Personale;
+import db_lab.data.Detenuto;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Optional;
 
 public interface Model {
-    Optional<Product> find(int productCode);
+    Optional<Personale> find(int productCode);
 
-    List<ProductPreview> previews();
+    List<Detenuto> previews();
 
     boolean loadedPreviews();
 
-    List<ProductPreview> loadPreviews();
+    List<Detenuto> loadPreviews();
 
     // Create a mocked version of the model.
     //

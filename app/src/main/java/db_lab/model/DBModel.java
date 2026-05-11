@@ -1,7 +1,7 @@
 package db_lab.model;
 
-import db_lab.data.Product;
-import db_lab.data.ProductPreview;
+import db_lab.data.Personale;
+import db_lab.data.Detenuto;
 import java.sql.Connection;
 import java.util.List;
 import java.util.Objects;
@@ -18,7 +18,7 @@ import java.util.Optional;
 public final class DBModel implements Model {
 
     private final Connection connection;
-    private Optional<List<ProductPreview>> previews;
+    private Optional<List<Detenuto>> previews;
 
     public DBModel(Connection connection) {
         Objects.requireNonNull(connection, "Model created with null connection");
@@ -27,12 +27,12 @@ public final class DBModel implements Model {
     }
 
     @Override
-    public Optional<Product> find(int productCode) {
-        return Product.DAO.find(connection, productCode);
+    public Optional<Personale> find(int productCode) {
+        return Personale.DAO.find(connection, productCode);
     }
 
     @Override
-    public List<ProductPreview> previews() {
+    public List<Detenuto> previews() {
         return this.previews.orElse(List.of());
     }
 
@@ -42,8 +42,8 @@ public final class DBModel implements Model {
     }
 
     @Override
-    public List<ProductPreview> loadPreviews() {
-        var previews = ProductPreview.DAO.list(this.connection);
+    public List<Detenuto> loadPreviews() {
+        var previews = Detenuto.DAO.list(this.connection);
         this.previews = Optional.of(previews);
         return previews;
     }

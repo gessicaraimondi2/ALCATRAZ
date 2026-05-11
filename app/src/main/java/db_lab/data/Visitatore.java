@@ -6,12 +6,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-public final class Material {
+public final class Visitatore {
 
     public final int code;
     public final String description;
 
-    public Material(int code, String description) {
+    public Visitatore(int code, String description) {
         this.code = code;
         this.description = description == null ? "" : description;
     }
@@ -22,8 +22,8 @@ public final class Material {
             return true;
         } else if (other == null) {
             return false;
-        } else if (other instanceof Material) {
-            var m = (Material) other;
+        } else if (other instanceof Visitatore) {
+            var m = (Visitatore) other;
             return (m.code == this.code && m.description.equals(this.description));
         } else {
             return false;
@@ -37,15 +37,15 @@ public final class Material {
 
     @Override
     public String toString() {
-        return Printer.stringify(
+        return Amministratore.stringify(
             "Material",
-            List.of(Printer.field("code", this.code), Printer.field("description", this.description))
+            List.of(Amministratore.field("code", this.code), Amministratore.field("description", this.description))
         );
     }
 
     public static final class DAO {
 
-        public static Map<Material, Float> forProduct(Connection connection, int productId) {
+        public static Map<Visitatore, Float> forProduct(Connection connection, int productId) {
             // Iterating through a resultSet:
             // https://docs.oracle.com/javase/tutorial/jdbc/basics/retrieving.html
             throw new UnsupportedOperationException("Unimplemented");

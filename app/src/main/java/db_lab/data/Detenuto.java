@@ -8,13 +8,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-public final class ProductPreview {
+public final class Detenuto {
 
     public final int code;
     public final String name;
     public final Set<Tag> tags;
 
-    public ProductPreview(int code, String name, Set<Tag> tags) {
+    public Detenuto(int code, String name, Set<Tag> tags) {
         this.code = code;
         this.name = name == null ? "" : name;
         this.tags = tags == null ? Set.of() : Collections.unmodifiableSet(new HashSet<>(tags));
@@ -26,8 +26,8 @@ public final class ProductPreview {
             return true;
         } else if (other == null) {
             return false;
-        } else if (other instanceof ProductPreview) {
-            var p = (ProductPreview) other;
+        } else if (other instanceof Detenuto) {
+            var p = (Detenuto) other;
             return p.code == this.code && p.name.equals(this.name) && p.tags.equals(this.tags);
         } else {
             return false;
@@ -41,19 +41,19 @@ public final class ProductPreview {
 
     @Override
     public String toString() {
-        return Printer.stringify(
+        return Amministratore.stringify(
             "ProductPreview",
             List.of(
-                Printer.field("code", this.code),
-                Printer.field("name", this.name),
-                Printer.field("tags", this.tags)
+                Amministratore.field("code", this.code),
+                Amministratore.field("name", this.name),
+                Amministratore.field("tags", this.tags)
             )
         );
     }
 
     public static final class DAO {
 
-        public static List<ProductPreview> list(Connection connection) {
+        public static List<Detenuto> list(Connection connection) {
             // Iterating through a resultSet:
             // https://docs.oracle.com/javase/tutorial/jdbc/basics/retrieving.html
             throw new UnsupportedOperationException("unimplemented");

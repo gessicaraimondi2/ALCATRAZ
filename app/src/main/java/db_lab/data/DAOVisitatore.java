@@ -7,20 +7,20 @@ import java.io.Serial;
 //
 // This way we won't have `SQLException`s bubbling up in all other functions.
 //
-public final class DAOException extends RuntimeException {
+public final class DAOVisitatore extends RuntimeException {
 
     @Serial
     private static final long serialVersionUID = 1L;
 
-    public DAOException(String message) {
+    public DAOVisitatore(String message) {
         super(message);
     }
 
-    public DAOException(Throwable cause) {
+    public DAOVisitatore(Throwable cause) {
         super(cause);
     }
 
-    public DAOException(String message, Throwable cause) {
+    public DAOVisitatore(String message, Throwable cause) {
         super(message, cause);
     }
 }
