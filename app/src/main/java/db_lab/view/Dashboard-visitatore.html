@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALCATRAZ — Portale Visitatori</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #080b12;
+    --surface:   #0f1520;
+    --card:      #131c2e;
+    --border:    #1c2d47;
+    --border-hi: #2a4470;
+    --accent:    #f59e0b;
+    --accent-lo: rgba(245,158,11,.12);
+    --blue:      #3b82f6;
+    --blue-lo:   rgba(59,130,246,.12);
+    --text:      #dce6f5;
+    --muted:     #5a7299;
+    --ok:        #10b981;
+    --ok-lo:     rgba(16,185,129,.12);
+    --err:       #ef4444;
+    --err-lo:    rgba(239,68,68,.12);
+    --warn:      #f59e0b;
+    --warn-lo:   rgba(245,158,11,.10);
+    --font-head: 'Rajdhani', sans-serif;
+    --font-body: 'IBM Plex Mono', monospace;
+    --r:         6px;
+    --r-lg:      10px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: .4;
+  }
+
+  /* ── GRID LINES BG ── */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(8,11,18,.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 58px;
+  }
+
+  .logo {
+    font-family: var(--font-head);
+    font-size: 22px; font-weight: 700;
+    letter-spacing: .25em;
+    color: var(--accent);
+    text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .logo-icon {
+    width: 28px; height: 28px;
+    border: 2px solid var(--accent);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  .header-right {
+    display: flex; align-items: center; gap: 1rem;
+  }
+
+  .user-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 14px 4px 8px;
+    font-size: 12px; color: var(--muted);
+  }
+
+  .user-avatar {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--accent-lo);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-size: 10px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head);
+  }
+
+  .btn-logout {
+    background: none; border: 1px solid var(--border);
+    color: var(--muted); font-family: var(--font-body);
+    font-size: 12px; padding: 5px 14px;
+    border-radius: var(--r); cursor: pointer;
+    transition: all .2s;
+    letter-spacing: .05em;
+  }
+  .btn-logout:hover { border-color: var(--err); color: var(--err); }
+
+  /* ── MAIN LAYOUT ── */
+  main {
+    position: relative; z-index: 1;
+    min-height: calc(100vh - 58px);
+    padding: 2.5rem 2rem;
+    max-width: 1100px; margin: 0 auto;
+  }
+
+  /* ── VIEWS ── */
+  .view { display: none; }
+  .view.active { display: block; animation: fadeIn .3s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+  /* ── AUTH CARD ── */
+  .auth-wrap {
+    min-height: calc(100vh - 58px);
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .auth-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 2.5rem;
+    width: 100%; max-width: 440px;
+    position: relative; overflow: hidden;
+  }
+
+  .auth-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  }
+
+  .auth-title {
+    font-family: var(--font-head);
+    font-size: 26px; font-weight: 700;
+    letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text); margin-bottom: 4px;
+  }
+
+  .auth-sub {
+    font-size: 12px; color: var(--muted); margin-bottom: 2rem;
+    letter-spacing: .04em;
+  }
+
+  /* ── FORM ELEMENTS ── */
+  .field { margin-bottom: 1.2rem; }
+
+  label {
+    display: block; font-size: 11px; font-weight: 500;
+    color: var(--muted); letter-spacing: .1em;
+    text-transform: uppercase; margin-bottom: 6px;
+  }
+
+  input[type=text], input[type=email], input[type=password],
+  input[type=date], input[type=number], select, textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    padding: 10px 14px;
+    outline: none;
+    transition: border-color .2s, box-shadow .2s;
+    appearance: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px var(--blue-lo);
+  }
+
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a7299' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+    cursor: pointer;
+  }
+
+  select option { background: var(--card); }
+
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  .hint { font-size: 11px; color: var(--muted); margin-top: 5px; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: var(--font-head); font-size: 16px; font-weight: 600;
+    letter-spacing: .12em; text-transform: uppercase;
+    padding: 10px 24px; border-radius: var(--r);
+    border: none; cursor: pointer; transition: all .2s;
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    background: var(--accent); color: #000;
+    width: 100%;
+  }
+  .btn-primary:hover { background: #fbbf24; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-sm {
+    font-size: 13px; padding: 7px 16px;
+  }
+
+  .btn-danger-outline {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+  .btn-danger-outline:hover { border-color: var(--err); color: var(--err); }
+
+  .auth-link {
+    text-align: center; margin-top: 1.5rem;
+    font-size: 12px; color: var(--muted);
+  }
+  .auth-link a {
+    color: var(--accent); text-decoration: none; font-weight: 500;
+  }
+  .auth-link a:hover { text-decoration: underline; }
+
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap;
+  }
+
+  .page-title {
+    font-family: var(--font-head);
+    font-size: 32px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .page-title span { color: var(--accent); }
+
+  .page-sub {
+    font-size: 12px; color: var(--muted);
+    margin-top: 4px; letter-spacing: .04em;
+  }
+
+  /* ── STATS ROW ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px; margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 1.2rem 1.4rem;
+    position: relative; overflow: hidden;
+  }
+
+  .stat-card::after {
+    content: '';
+    position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  }
+  .stat-card.s-total::after { background: var(--blue); }
+  .stat-card.s-ok::after    { background: var(--ok); }
+  .stat-card.s-warn::after  { background: var(--warn); }
+  .stat-card.s-err::after   { background: var(--err); }
+
+  .stat-label {
+    font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: var(--font-head);
+    font-size: 34px; font-weight: 700; line-height: 1;
+    color: var(--text);
+  }
+
+  .stat-card.s-total .stat-value { color: var(--blue); }
+  .stat-card.s-ok    .stat-value { color: var(--ok); }
+  .stat-card.s-warn  .stat-value { color: var(--warn); }
+  .stat-card.s-err   .stat-value { color: var(--err); }
+
+  /* ── BOOKINGS TABLE ── */
+  .table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+  }
+
+  .table-head-bar {
+    padding: 1rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; flex-wrap: wrap;
+  }
+
+  .table-title {
+    font-family: var(--font-head);
+    font-size: 16px; font-weight: 600;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: var(--text);
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  thead tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    text-align: left;
+    font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500;
+    padding: 12px 16px;
+  }
+
+  td {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(28,45,71,.5);
+    font-size: 13px; color: var(--text);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+
+  tbody tr { transition: background .15s; cursor: pointer; }
+  tbody tr:hover { background: rgba(59,130,246,.05); }
+
+  .mono { font-family: var(--font-body); font-size: 12px; color: var(--muted); }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 500; letter-spacing: .06em;
+    padding: 3px 10px; border-radius: 20px;
+    text-transform: uppercase;
+  }
+
+  .badge-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+  .badge-ok   { background: var(--ok-lo);   color: var(--ok);   }
+  .badge-ok   .badge-dot { background: var(--ok); }
+  .badge-err  { background: var(--err-lo);  color: var(--err);  }
+  .badge-err  .badge-dot { background: var(--err); }
+  .badge-warn { background: var(--warn-lo); color: var(--warn); }
+  .badge-warn .badge-dot { background: var(--warn); }
+  .badge-blue { background: var(--blue-lo); color: var(--blue); }
+  .badge-blue .badge-dot { background: var(--blue); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center; padding: 4rem 2rem;
+    color: var(--muted);
+  }
+  .empty-icon {
+    font-size: 48px; margin-bottom: 1rem; opacity: .3;
+  }
+  .empty-title {
+    font-family: var(--font-head);
+    font-size: 18px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 8px;
+  }
+  .empty-sub { font-size: 12px; }
+
+  /* ── BOOKING DETAIL ── */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  @media (max-width: 680px) {
+    .detail-grid { grid-template-columns: 1fr; }
+    .field-row { grid-template-columns: 1fr; }
+  }
+
+  .detail-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+  }
+
+  .detail-card-head {
+    padding: .9rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-head);
+    font-size: 13px; font-weight: 600;
+    letter-spacing: .12em; text-transform: uppercase;
+    color: var(--muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .detail-card-body { padding: 1.2rem 1.4rem; }
+
+  .kv-row {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(28,45,71,.4);
+    gap: 1rem;
+  }
+  .kv-row:last-child { border-bottom: none; }
+
+  .kv-key {
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); white-space: nowrap;
+  }
+
+  .kv-val {
+    font-size: 13px; color: var(--text);
+    text-align: right; word-break: break-word;
+  }
+
+  /* ── CORSI TABLE ── */
+  .mini-table { width: 100%; border-collapse: collapse; }
+  .mini-table th {
+    font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--muted); padding: 6px 0; border-bottom: 1px solid var(--border);
+  }
+  .mini-table td {
+    font-size: 12px; padding: 10px 0;
+    border-bottom: 1px solid rgba(28,45,71,.3);
+    color: var(--text);
+  }
+  .mini-table tr:last-child td { border-bottom: none; }
+
+  /* ── ALERT BOXES ── */
+  .alert {
+    padding: 1rem 1.2rem;
+    border-radius: var(--r);
+    border-left: 3px solid;
+    font-size: 13px;
+    margin-bottom: 1.5rem;
+  }
+  .alert-err  { background: var(--err-lo);  border-color: var(--err);  color: var(--err); }
+  .alert-ok   { background: var(--ok-lo);   border-color: var(--ok);   color: var(--ok); }
+  .alert-warn { background: var(--warn-lo); border-color: var(--warn); color: var(--warn); }
+
+  .alert strong { display: block; font-weight: 600; margin-bottom: 3px;
+    font-family: var(--font-head); letter-spacing: .06em; font-size: 14px; }
+
+  /* ── BACK LINK ── */
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--muted); font-size: 12px; text-decoration: none;
+    letter-spacing: .06em; margin-bottom: 1.5rem;
+    transition: color .2s; cursor: pointer;
+    background: none; border: none; padding: 0;
+  }
+  .back-link:hover { color: var(--accent); }
+
+  /* ── SECURITY STRIP ── */
+  .security-strip {
+    background: rgba(245,158,11,.06);
+    border: 1px solid rgba(245,158,11,.2);
+    border-radius: var(--r);
+    padding: .7rem 1rem;
+    font-size: 11px; color: rgba(245,158,11,.7);
+    letter-spacing: .06em; margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .security-strip::before {
+    content: '⚠';
+    font-size: 13px;
+  }
+
+  /* ── FORM CARD ── */
+  .form-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 2rem;
+    max-width: 640px;
+    position: relative; overflow: hidden;
+  }
+  .form-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--blue), transparent);
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    border: none; border-top: 1px solid var(--border);
+    margin: 1.5rem 0;
+  }
+
+  /* ── NO SCROLL on auth ── */
+  .auth-wrap { padding: 2rem 1rem; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-hi); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════ HEADER -->
+<header id="app-header" style="display:none;">
+  <div class="logo">
+    <div class="logo-icon">🔒</div>
+    ALCATRAZ
+  </div>
+  <div class="header-right">
+    <div class="user-pill">
+      <div class="user-avatar" id="header-avatar">?</div>
+      <span id="header-name">Utente</span>
+    </div>
+    <button class="btn-logout" onclick="logout()">Esci</button>
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════ VIEWS -->
+<main id="app-main">
+
+  <!-- ────────────────── LOGIN ── -->
+  <div class="view active" id="view-login">
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <div class="auth-title">Accedi</div>
+        <div class="auth-sub">Portale riservato ai visitatori autorizzati</div>
+
+        <div class="security-strip">
+          Accesso soggetto a monitoraggio e registrazione — D.P.R. 230/2000
+        </div>
+
+        <div id="login-error" class="alert alert-err" style="display:none;">
+          <strong>Accesso negato</strong>
+          Credenziali non valide. Riprovare.
+        </div>
+
+        <div class="field">
+          <label>Indirizzo E-Mail</label>
+          <input type="email" id="login-email" placeholder="mario.rossi@email.it" autocomplete="email">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+          <div class="hint">Min. 8 caratteri</div>
+        </div>
+
+        <button class="btn btn-primary" onclick="doLogin()">Accedi al portale</button>
+
+        <div class="auth-link">
+          Non hai un account? <a href="#" onclick="show('register')">Registrati</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────── REGISTER ── -->
+  <div class="view" id="view-register">
+    <div class="auth-wrap">
+      <div class="auth-card" style="max-width:520px;">
+        <div class="auth-title">Registrazione</div>
+        <div class="auth-sub">Crea il tuo account visitatore</div>
+
+        <div class="security-strip">
+          I dati forniti saranno verificati dall'amministrazione dell'istituto
+        </div>
+
+        <div id="reg-error" class="alert alert-err" style="display:none;"></div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Nome</label>
+            <input type="text" id="reg-nome" placeholder="Mario">
+          </div>
+          <div class="field">
+            <label>Cognome</label>
+            <input type="text" id="reg-cognome" placeholder="Rossi">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Codice Fiscale</label>
+          <input type="text" id="reg-cf" placeholder="RSSMRA80A01H501U" maxlength="16"
+            oninput="this.value=this.value.toUpperCase()">
+        </div>
+
+        <div class="field">
+          <label>Indirizzo E-Mail</label>
+          <input type="email" id="reg-email" placeholder="mario.rossi@email.it">
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Password</label>
+            <input type="password" id="reg-pass" placeholder="••••••••">
+          </div>
+          <div class="field">
+            <label>Conferma Password</label>
+            <input type="password" id="reg-pass2" placeholder="••••••••">
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="doRegister()">Crea account</button>
+
+        <div class="auth-link">
+          Hai già un account? <a href="#" onclick="show('login')">Accedi</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────── DASHBOARD ── -->
+  <div class="view" id="view-dashboard">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Le mie <span>Prenotazioni</span></div>
+        <div class="page-sub" id="dash-sub">Storico richieste di visita</div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="show('new-booking')">+ Nuova prenotazione</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card s-total">
+        <div class="stat-label">Totale</div>
+        <div class="stat-value" id="stat-total">0</div>
+      </div>
+      <div class="stat-card s-ok">
+        <div class="stat-label">Confermate</div>
+        <div class="stat-value" id="stat-ok">0</div>
+      </div>
+      <div class="stat-card s-warn">
+        <div class="stat-label">In attesa</div>
+        <div class="stat-value" id="stat-wait">0</div>
+      </div>
+      <div class="stat-card s-err">
+        <div class="stat-label">Rifiutate</div>
+        <div class="stat-value" id="stat-err">0</div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-head-bar">
+        <div class="table-title">Storico Prenotazioni</div>
+      </div>
+      <div id="booking-list-container">
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon">📋</div>
+          <div class="empty-title">Nessuna prenotazione</div>
+          <div class="empty-sub">Clicca su "Nuova prenotazione" per iniziare</div>
+        </div>
+        <table id="booking-table" style="display:none;">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Detenuto</th>
+              <th>Data richiesta</th>
+              <th>Autorizzazione</th>
+              <th>Stato</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="booking-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────── NUOVA PRENOTAZIONE ── -->
+  <div class="view" id="view-new-booking">
+    <button class="back-link" onclick="show('dashboard')">← Torna alle prenotazioni</button>
+
+    <div class="page-header">
+      <div>
+        <div class="page-title">Nuova <span>Prenotazione</span></div>
+        <div class="page-sub">Compila il modulo per richiedere una visita</div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="security-strip">
+        La prenotazione sarà soggetta a verifica da parte dell'amministrazione dell'istituto.
+        Le sezioni di Alta Sicurezza e Isolamento non ammettono visite.
+      </div>
+
+      <div id="booking-error" class="alert alert-err" style="display:none;"></div>
+
+      <div class="field">
+        <label>Matricola Detenuto</label>
+        <input type="text" id="bk-matricola" placeholder="es. DET-00123"
+          oninput="this.value=this.value.toUpperCase()">
+        <div class="hint">La matricola è comunicata dall'istituto</div>
+      </div>
+
+      <div class="field">
+        <label>Data Richiesta Visita</label>
+        <input type="date" id="bk-data">
+      </div>
+
+      <hr class="divider">
+
+      <div class="field-row">
+        <div class="field">
+          <label>Numero Autorizzazione</label>
+          <input type="number" id="bk-num-auth" placeholder="es. 2024-00456" min="1">
+        </div>
+        <div class="field">
+          <label>Tipo Autorizzazione</label>
+          <select id="bk-tipo-auth">
+            <option value="">— Seleziona —</option>
+            <option value="Familiare">Familiare (parentela diretta)</option>
+            <option value="Coniuge">Coniuge / Convivente</option>
+            <option value="Tutore">Tutore legale</option>
+            <option value="Conoscente">Conoscente autorizzato</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:1rem; margin-top:.5rem;">
+        <button class="btn btn-outline btn-sm" onclick="show('dashboard')" style="flex:1;">Annulla</button>
+        <button class="btn btn-primary btn-sm" onclick="submitBooking()" style="flex:2;">Invia richiesta</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ────────────────── DETTAGLIO PRENOTAZIONE ── -->
+  <div class="view" id="view-booking-detail">
+    <button class="back-link" onclick="show('dashboard')">← Torna alle prenotazioni</button>
+
+    <div class="page-header" style="margin-bottom:1.2rem;">
+      <div>
+        <div class="page-title" id="det-title">Prenotazione <span>#—</span></div>
+        <div class="page-sub" id="det-sub">—</div>
+      </div>
+      <div id="det-badge-wrap"></div>
+    </div>
+
+    <div id="det-alert-wrap"></div>
+
+    <div class="detail-grid" id="det-grid">
+      <div class="detail-card">
+        <div class="detail-card-head">📄 Dettagli Prenotazione</div>
+        <div class="detail-card-body" id="det-preno-body"></div>
+      </div>
+      <div class="detail-card">
+        <div class="detail-card-head">👤 Informazioni Detenuto</div>
+        <div class="detail-card-body" id="det-det-body"></div>
+      </div>
+    </div>
+
+    <div id="det-corsi-wrap" style="display:none;">
+      <div class="detail-card" style="margin-bottom:1.5rem;">
+        <div class="detail-card-head">🎓 Corsi di Reinserimento</div>
+        <div class="detail-card-body">
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th style="text-align:left;">Titolo</th>
+                <th style="text-align:left;">Tipologia</th>
+                <th style="text-align:left;">Periodo</th>
+                <th style="text-align:left;">Esito</th>
+              </tr>
+            </thead>
+            <tbody id="det-corsi-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="det-prov-wrap" style="display:none;">
+      <div class="detail-card">
+        <div class="detail-card-head">⚠️ Provvedimenti Disciplinari</div>
+        <div class="detail-card-body">
+          <table class="mini-table">
+            <thead>
+              <tr>
+                <th style="text-align:left;">#</th>
+                <th style="text-align:left;">Tipo</th>
+                <th style="text-align:left;">Data</th>
+                <th style="text-align:left;">Motivazione</th>
+              </tr>
+            </thead>
+            <tbody id="det-prov-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   MOCK DATA  —  sostituire con chiamate al backend Java
+═══════════════════════════════════════════════════════════ */
+const MOCK_USERS = [
+  { accountID: 1, email: 'mario.rossi@email.it', password: 'password123',
+    nome: 'Mario', cognome: 'Rossi', cf: 'RSSMRA80A01H501U' }
+];
+
+const MOCK_BOOKINGS = [
+  {
+    id: 'PRE-001', matricolaDetenuto: 'DET-00042', data: '2025-09-15',
+    numAuth: 2024001, tipoAuth: 'Familiare',
+    esito: 'Confermata', motivoRifiuto: null,
+    detenuto: {
+      nome: 'Giuseppe', cognome: 'Verdi',
+      dataNascita: '1982-03-10', cf: 'VRDGPP82C10H501X',
+      dataIngresso: '2022-06-01', durataPena: '8 anni',
+      reato: 'Associazione a delinquere', stato: 'In corso',
+      sezione: 'Ordinaria', cella: 'B-14'
+    },
+    corsi: [
+      { titolo: 'Informatica base', tipo: 'Professionale', inizio: '2023-01-10', fine: '2023-06-10', esito: 'Superato' },
+      { titolo: 'Laboratorio di ceramica', tipo: 'Ricreativo', inizio: '2023-09-01', fine: '2024-01-31', esito: null },
+      { titolo: 'Licenza media', tipo: 'Scolastico', inizio: '2024-03-01', fine: '2024-07-01', esito: 'Non superato' }
+    ],
+    provvedimenti: []
+  },
+  {
+    id: 'PRE-002', matricolaDetenuto: 'DET-00117', data: '2025-10-02',
+    numAuth: 2024002, tipoAuth: 'Coniuge',
+    esito: 'In attesa', motivoRifiuto: null,
+    detenuto: null, corsi: [], provvedimenti: []
+  },
+  {
+    id: 'PRE-003', matricolaDetenuto: 'DET-00099', data: '2025-08-20',
+    numAuth: 2024003, tipoAuth: 'Conoscente',
+    esito: 'Rifiutata',
+    motivoRifiuto: 'Il detenuto è attualmente assegnato alla sezione di Alta Sicurezza. Le visite non sono consentite.',
+    detenuto: null, corsi: [], provvedimenti: []
+  }
+];
+
+/* ═══════════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════════ */
+let currentUser = null;
+let bookings = [];
+
+/* ═══════════════════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════════════════ */
+function show(viewId) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + viewId).classList.add('active');
+  window.scrollTo(0, 0);
+
+  const authViews = ['login', 'register'];
+  const header = document.getElementById('app-header');
+  header.style.display = authViews.includes(viewId) ? 'none' : 'flex';
+
+  if (viewId === 'dashboard') renderDashboard();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════════════════════ */
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+
+  const user = MOCK_USERS.find(u => u.email === email && u.password === pass);
+  if (!user) {
+    errEl.style.display = 'block'; return;
+  }
+
+  errEl.style.display = 'none';
+  currentUser = user;
+  bookings = [...MOCK_BOOKINGS];
+
+  // aggiorna header
+  document.getElementById('header-name').textContent = user.nome + ' ' + user.cognome;
+  document.getElementById('header-avatar').textContent =
+    (user.nome[0] + user.cognome[0]).toUpperCase();
+
+  show('dashboard');
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    const v = document.querySelector('.view.active');
+    if (v && v.id === 'view-login') doLogin();
+    if (v && v.id === 'view-register') doRegister();
+  }
+});
+
+function doRegister() {
+  const nome   = document.getElementById('reg-nome').value.trim();
+  const cog    = document.getElementById('reg-cognome').value.trim();
+  const cf     = document.getElementById('reg-cf').value.trim();
+  const email  = document.getElementById('reg-email').value.trim();
+  const pass   = document.getElementById('reg-pass').value;
+  const pass2  = document.getElementById('reg-pass2').value;
+  const errEl  = document.getElementById('reg-error');
+
+  const errors = [];
+  if (!nome || !cog)      errors.push('Nome e cognome obbligatori.');
+  if (cf.length !== 16)   errors.push('Codice fiscale non valido (16 caratteri).');
+  if (!email.includes('@')) errors.push('Email non valida.');
+  if (pass.length < 8)    errors.push('Password troppo corta (min. 8 caratteri).');
+  if (pass !== pass2)     errors.push('Le password non coincidono.');
+  if (MOCK_USERS.find(u => u.email === email)) errors.push('Email già registrata.');
+
+  if (errors.length) {
+    errEl.innerHTML = '<strong>Errore di validazione</strong>' + errors.join('<br>');
+    errEl.style.display = 'block'; return;
+  }
+
+  const newUser = {
+    accountID: MOCK_USERS.length + 1,
+    email, password: pass, nome, cognome: cog, cf
+  };
+  MOCK_USERS.push(newUser);
+  currentUser = newUser;
+  bookings = [];
+
+  document.getElementById('header-name').textContent = nome + ' ' + cog;
+  document.getElementById('header-avatar').textContent =
+    (nome[0] + cog[0]).toUpperCase();
+
+  show('dashboard');
+}
+
+function logout() {
+  currentUser = null;
+  bookings = [];
+  document.getElementById('login-email').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-error').style.display = 'none';
+  show('login');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════════════ */
+function renderDashboard() {
+  if (!currentUser) return;
+
+  const sub = document.getElementById('dash-sub');
+  sub.textContent = 'Benvenuto/a, ' + currentUser.nome + ' ' + currentUser.cognome;
+
+  const total = bookings.length;
+  const ok    = bookings.filter(b => b.esito === 'Confermata').length;
+  const wait  = bookings.filter(b => b.esito === 'In attesa').length;
+  const err   = bookings.filter(b => b.esito === 'Rifiutata').length;
+
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-ok').textContent    = ok;
+  document.getElementById('stat-wait').textContent  = wait;
+  document.getElementById('stat-err').textContent   = err;
+
+  const empty = document.getElementById('empty-state');
+  const table = document.getElementById('booking-table');
+
+  if (total === 0) {
+    empty.style.display = 'block';
+    table.style.display = 'none';
+    return;
+  }
+
+  empty.style.display = 'none';
+  table.style.display = 'table';
+
+  const tbody = document.getElementById('booking-tbody');
+  tbody.innerHTML = bookings.map(b => `
+    <tr onclick="openDetail('${b.id}')">
+      <td><span class="mono">${b.id}</span></td>
+      <td><span class="mono">${b.matricolaDetenuto}</span></td>
+      <td>${formatDate(b.data)}</td>
+      <td>${b.tipoAuth}</td>
+      <td>${badgeFor(b.esito)}</td>
+      <td><span style="color:var(--muted);font-size:18px;line-height:1;">›</span></td>
+    </tr>
+  `).join('');
+}
+
+function badgeFor(esito) {
+  const map = {
+    'Confermata': 'badge-ok',
+    'In attesa':  'badge-warn',
+    'Rifiutata':  'badge-err'
+  };
+  return `<span class="badge ${map[esito] || 'badge-blue'}">
+    <span class="badge-dot"></span>${esito}
+  </span>`;
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const [y,m,g] = d.split('-');
+  return `${g}/${m}/${y}`;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NUOVA PRENOTAZIONE
+═══════════════════════════════════════════════════════════ */
+function submitBooking() {
+  const mat   = document.getElementById('bk-matricola').value.trim();
+  const data  = document.getElementById('bk-data').value;
+  const num   = document.getElementById('bk-num-auth').value;
+  const tipo  = document.getElementById('bk-tipo-auth').value;
+  const errEl = document.getElementById('booking-error');
+
+  const errors = [];
+  if (!mat)  errors.push('Matricola detenuto obbligatoria.');
+  if (!data) errors.push('Data visita obbligatoria.');
+  if (new Date(data) < new Date()) errors.push('La data non può essere nel passato.');
+  if (!num)  errors.push('Numero autorizzazione obbligatorio.');
+  if (!tipo) errors.push('Tipo autorizzazione obbligatorio.');
+
+  if (errors.length) {
+    errEl.innerHTML = '<strong>Dati mancanti o errati</strong>' + errors.join('<br>');
+    errEl.style.display = 'block'; return;
+  }
+
+  errEl.style.display = 'none';
+
+  const newId = 'PRE-' + String(bookings.length + 1).padStart(3, '0');
+  bookings.unshift({
+    id: newId,
+    matricolaDetenuto: mat,
+    data,
+    numAuth: parseInt(num),
+    tipoAuth: tipo,
+    esito: 'In attesa',
+    motivoRifiuto: null,
+    detenuto: null, corsi: [], provvedimenti: []
+  });
+
+  document.getElementById('bk-matricola').value = '';
+  document.getElementById('bk-data').value = '';
+  document.getElementById('bk-num-auth').value = '';
+  document.getElementById('bk-tipo-auth').value = '';
+
+  show('dashboard');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DETTAGLIO PRENOTAZIONE
+═══════════════════════════════════════════════════════════ */
+function openDetail(id) {
+  const b = bookings.find(b => b.id === id);
+  if (!b) return;
+
+  document.getElementById('det-title').innerHTML =
+    'Prenotazione <span>#' + b.id + '</span>';
+  document.getElementById('det-sub').textContent =
+    'Detenuto: ' + b.matricolaDetenuto + ' — Richiesta del ' + formatDate(b.data);
+
+  document.getElementById('det-badge-wrap').innerHTML = badgeFor(b.esito);
+
+  // alert
+  const alertWrap = document.getElementById('det-alert-wrap');
+  if (b.esito === 'Rifiutata' && b.motivoRifiuto) {
+    alertWrap.innerHTML = `<div class="alert alert-err">
+      <strong>Visita rifiutata</strong>${b.motivoRifiuto}
+    </div>`;
+  } else if (b.esito === 'Confermata') {
+    alertWrap.innerHTML = `<div class="alert alert-ok">
+      <strong>Visita confermata</strong>
+      La tua visita è stata autorizzata dall'amministrazione. Presentarsi con documento d'identità valido.
+    </div>`;
+  } else {
+    alertWrap.innerHTML = `<div class="alert alert-warn">
+      <strong>In attesa di valutazione</strong>
+      La richiesta è in fase di revisione. Verifica l'esito nelle prossime ore.
+    </div>`;
+  }
+
+  // dettagli prenotazione
+  document.getElementById('det-preno-body').innerHTML = kvTable([
+    ['ID Prenotazione',    b.id],
+    ['Matricola Detenuto', b.matricolaDetenuto],
+    ['Data Richiesta',     formatDate(b.data)],
+    ['N° Autorizzazione',  b.numAuth],
+    ['Tipo Autorizzazione',b.tipoAuth],
+    ['Esito',              b.esito]
+  ]);
+
+  // info detenuto
+  const detBody = document.getElementById('det-det-body');
+  if (b.esito === 'Confermata' && b.detenuto) {
+    const d = b.detenuto;
+    detBody.innerHTML = kvTable([
+      ['Nome',          d.nome + ' ' + d.cognome],
+      ['Data di Nascita', formatDate(d.dataNascita)],
+      ['Codice Fiscale', d.cf],
+      ['Data Ingresso',  formatDate(d.dataIngresso)],
+      ['Durata Pena',    d.durataPena],
+      ['Reato',          d.reato],
+      ['Stato Pena',     d.stato],
+      ['Sezione / Cella', d.sezione + ' / ' + d.cella]
+    ]);
+  } else {
+    detBody.innerHTML = `<div style="color:var(--muted);font-size:12px;text-align:center;padding:2rem 0;">
+      Le informazioni sul detenuto sono disponibili<br>solo dopo l'approvazione della visita.
+    </div>`;
+  }
+
+  // corsi
+  const corsiWrap = document.getElementById('det-corsi-wrap');
+  if (b.esito === 'Confermata' && b.corsi && b.corsi.length) {
+    corsiWrap.style.display = 'block';
+    document.getElementById('det-corsi-tbody').innerHTML =
+      b.corsi.map(c => `<tr>
+        <td>${c.titolo}</td>
+        <td><span class="badge badge-blue" style="font-size:10px;">${c.tipo}</span></td>
+        <td class="mono">${formatDate(c.inizio)} → ${formatDate(c.fine)}</td>
+        <td>${c.esito
+          ? `<span class="badge ${c.esito === 'Superato' ? 'badge-ok' : 'badge-err'}">${c.esito}</span>`
+          : '<span class="mono" style="color:var(--muted);">—</span>'
+        }</td>
+      </tr>`).join('');
+  } else {
+    corsiWrap.style.display = 'none';
+  }
+
+  // provvedimenti
+  const provWrap = document.getElementById('det-prov-wrap');
+  if (b.esito === 'Confermata' && b.provvedimenti && b.provvedimenti.length) {
+    provWrap.style.display = 'block';
+    document.getElementById('det-prov-tbody').innerHTML =
+      b.provvedimenti.map(p => `<tr>
+        <td class="mono">${p.id}</td>
+        <td><span class="badge badge-err">${p.tipo}</span></td>
+        <td class="mono">${formatDate(p.data)}</td>
+        <td>${p.motivazione}</td>
+      </tr>`).join('');
+  } else {
+    provWrap.style.display = 'none';
+  }
+
+  show('booking-detail');
+}
+
+function kvTable(rows) {
+  return rows.map(([k, v]) => `
+    <div class="kv-row">
+      <span class="kv-key">${k}</span>
+      <span class="kv-val">${v || '—'}</span>
+    </div>`).join('');
+}
+</script>
+</body>
+</html>
