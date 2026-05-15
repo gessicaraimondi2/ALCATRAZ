@@ -1,54 +1,54 @@
 package db_lab.data;
 
-import java.sql.Connection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.time.LocalDate;
 
-public final class Visitatore {
+public class Visitatore {
 
-    public final int code;
-    public final String description;
+    private int accountID;
+    private String email;
+    private String password;
+    private LocalDate dataCreazione;
+    private String nome;
+    private String cognome;
+    private String codiceFiscale;
 
-    public Visitatore(int code, String description) {
-        this.code = code;
-        this.description = description == null ? "" : description;
+    public Visitatore() {}
+
+    public Visitatore(int accountID, String email, String password,
+                      LocalDate dataCreazione, String nome, String cognome, String codiceFiscale) {
+        this.accountID     = accountID;
+        this.email         = email;
+        this.password      = password;
+        this.dataCreazione = dataCreazione;
+        this.nome          = nome;
+        this.cognome       = cognome;
+        this.codiceFiscale = codiceFiscale;
     }
 
-    @Override
-    public boolean equals(Object other) {
-        if (other == this) {
-            return true;
-        } else if (other == null) {
-            return false;
-        } else if (other instanceof Visitatore) {
-            var m = (Visitatore) other;
-            return (m.code == this.code && m.description.equals(this.description));
-        } else {
-            return false;
-        }
-    }
+    // Getters e Setters
+    public int getAccountID()                     { return accountID; }
+    public void setAccountID(int accountID)        { this.accountID = accountID; }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.code, this.description);
-    }
+    public String getEmail()                       { return email; }
+    public void setEmail(String email)             { this.email = email; }
+
+    public String getPassword()                    { return password; }
+    public void setPassword(String password)       { this.password = password; }
+
+    public LocalDate getDataCreazione()            { return dataCreazione; }
+    public void setDataCreazione(LocalDate d)      { this.dataCreazione = d; }
+
+    public String getNome()                        { return nome; }
+    public void setNome(String nome)               { this.nome = nome; }
+
+    public String getCognome()                     { return cognome; }
+    public void setCognome(String cognome)         { this.cognome = cognome; }
+
+    public String getCodiceFiscale()               { return codiceFiscale; }
+    public void setCodiceFiscale(String cf)        { this.codiceFiscale = cf; }
 
     @Override
     public String toString() {
-        return Amministratore.stringify(
-            "Material",
-            List.of(Amministratore.field("code", this.code), Amministratore.field("description", this.description))
-        );
-    }
-
-    public static final class DAO {
-
-        public static Map<Visitatore, Float> forProduct(Connection connection, int productId) {
-            // Iterating through a resultSet:
-            // https://docs.oracle.com/javase/tutorial/jdbc/basics/retrieving.html
-            throw new UnsupportedOperationException("Unimplemented");
-        }
+        return "Visitatore{accountID=" + accountID + ", nome='" + nome + "', cognome='" + cognome + "'}";
     }
 }

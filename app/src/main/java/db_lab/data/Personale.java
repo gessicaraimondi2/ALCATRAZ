@@ -1,68 +1,50 @@
 package db_lab.data;
 
-import java.sql.Connection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.time.LocalDate;
 
-public final class Personale {
+public class Personale {
 
-    public final int code;
-    public final String name;
-    public final String description;
-    public final Map<Visitatore, Float> composition;
+    public enum Ruolo { Guardia, Educatore, Amministrativo }
 
-    public Personale(int code, String name, String description, Map<Visitatore, Float> composition) {
-        this.code = code;
-        this.name = name;
-        this.description = description == null ? "" : description;
-        this.composition = composition == null ? Map.of() : Collections.unmodifiableMap(new HashMap<>(composition));
+    private String matricola;
+    private String nome;
+    private String cognome;
+    private Ruolo ruolo;
+    private LocalDate dataAssunzione;
+    private int accountID;
+
+    public Personale() {}
+
+    public Personale(String matricola, String nome, String cognome,
+                     Ruolo ruolo, LocalDate dataAssunzione, int accountID) {
+        this.matricola      = matricola;
+        this.nome           = nome;
+        this.cognome        = cognome;
+        this.ruolo          = ruolo;
+        this.dataAssunzione = dataAssunzione;
+        this.accountID      = accountID;
     }
 
-    @Override
-    public boolean equals(Object other) {
-        if (other == this) {
-            return true;
-        } else if (other == null) {
-            return false;
-        } else if (other instanceof Personale) {
-            var p = (Personale) other;
-            return (
-                p.code == this.code &&
-                p.name.equals(this.name) &&
-                p.description.equals(this.description) &&
-                p.composition.equals(this.composition)
-            );
-        } else {
-            return false;
-        }
-    }
+    public String getMatricola()                       { return matricola; }
+    public void setMatricola(String matricola)          { this.matricola = matricola; }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.code, this.name, this.description, this.composition);
-    }
+    public String getNome()                            { return nome; }
+    public void setNome(String nome)                   { this.nome = nome; }
+
+    public String getCognome()                         { return cognome; }
+    public void setCognome(String cognome)             { this.cognome = cognome; }
+
+    public Ruolo getRuolo()                            { return ruolo; }
+    public void setRuolo(Ruolo ruolo)                  { this.ruolo = ruolo; }
+
+    public LocalDate getDataAssunzione()               { return dataAssunzione; }
+    public void setDataAssunzione(LocalDate d)         { this.dataAssunzione = d; }
+
+    public int getAccountID()                          { return accountID; }
+    public void setAccountID(int accountID)            { this.accountID = accountID; }
 
     @Override
     public String toString() {
-        return Amministratore.stringify(
-            "Product",
-            List.of(
-                Amministratore.field("code", this.code),
-                Amministratore.field("name", this.name),
-                Amministratore.field("description", this.description),
-                Amministratore.field("composition", this.composition)
-            )
-        );
-    }
-
-    public static final class DAO {
-
-        public static Optional<Personale> find(Connection connection, int productId) {
-            throw new UnsupportedOperationException("Unimplemented");
-        }
+        return "Personale{matricola='" + matricola + "', nome='" + nome + "', ruolo=" + ruolo + "}";
     }
 }

@@ -1,62 +1,94 @@
 package db_lab.data;
 
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.time.LocalDate;
 
-public final class Detenuto {
+public class Detenuto {
 
-    public final int code;
-    public final String name;
-    public final Set<Tag> tags;
+    public enum StatoDellaPena {
+        In_corso,
+        Scontata,
+        In_attesa_di_giudizio;
 
-    public Detenuto(int code, String name, Set<Tag> tags) {
-        this.code = code;
-        this.name = name == null ? "" : name;
-        this.tags = tags == null ? Set.of() : Collections.unmodifiableSet(new HashSet<>(tags));
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (other == this) {
-            return true;
-        } else if (other == null) {
-            return false;
-        } else if (other instanceof Detenuto) {
-            var p = (Detenuto) other;
-            return p.code == this.code && p.name.equals(this.name) && p.tags.equals(this.tags);
-        } else {
-            return false;
+        public String toDBString() {
+            return switch (this) {
+                case In_corso              -> "In corso";
+                case Scontata              -> "Scontata";
+                case In_attesa_di_giudizio -> "In attesa di giudizio";
+            };
         }
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.code, this.name, this.tags);
+    private String matricolaDetenuto;
+    private String nome;
+    private String cognome;
+    private LocalDate dataDiNascita;
+    private String codiceFiscale;
+    private LocalDate dataIngresso;
+    private String durataPena;
+    private String reato;
+    private StatoDellaPena statoDellaPena;
+    private int accountID;
+    private String numeroSezione;
+    private String numeroCella;
+
+    public Detenuto() {}
+
+    public Detenuto(String matricolaDetenuto, String nome, String cognome,
+                    LocalDate dataDiNascita, String codiceFiscale, LocalDate dataIngresso,
+                    String durataPena, String reato, StatoDellaPena statoDellaPena,
+                    int accountID, String numeroSezione, String numeroCella) {
+        this.matricolaDetenuto = matricolaDetenuto;
+        this.nome              = nome;
+        this.cognome           = cognome;
+        this.dataDiNascita     = dataDiNascita;
+        this.codiceFiscale     = codiceFiscale;
+        this.dataIngresso      = dataIngresso;
+        this.durataPena        = durataPena;
+        this.reato             = reato;
+        this.statoDellaPena    = statoDellaPena;
+        this.accountID         = accountID;
+        this.numeroSezione     = numeroSezione;
+        this.numeroCella       = numeroCella;
     }
+
+    public String getMatricolaDetenuto()                         { return matricolaDetenuto; }
+    public void setMatricolaDetenuto(String matricolaDetenuto)   { this.matricolaDetenuto = matricolaDetenuto; }
+
+    public String getNome()                                      { return nome; }
+    public void setNome(String nome)                             { this.nome = nome; }
+
+    public String getCognome()                                   { return cognome; }
+    public void setCognome(String cognome)                       { this.cognome = cognome; }
+
+    public LocalDate getDataDiNascita()                          { return dataDiNascita; }
+    public void setDataDiNascita(LocalDate d)                    { this.dataDiNascita = d; }
+
+    public String getCodiceFiscale()                             { return codiceFiscale; }
+    public void setCodiceFiscale(String codiceFiscale)           { this.codiceFiscale = codiceFiscale; }
+
+    public LocalDate getDataIngresso()                           { return dataIngresso; }
+    public void setDataIngresso(LocalDate d)                     { this.dataIngresso = d; }
+
+    public String getDurataPena()                                { return durataPena; }
+    public void setDurataPena(String durataPena)                 { this.durataPena = durataPena; }
+
+    public String getReato()                                     { return reato; }
+    public void setReato(String reato)                           { this.reato = reato; }
+
+    public StatoDellaPena getStatoDellaPena()                    { return statoDellaPena; }
+    public void setStatoDellaPena(StatoDellaPena s)              { this.statoDellaPena = s; }
+
+    public int getAccountID()                                    { return accountID; }
+    public void setAccountID(int accountID)                      { this.accountID = accountID; }
+
+    public String getNumeroSezione()                             { return numeroSezione; }
+    public void setNumeroSezione(String numeroSezione)           { this.numeroSezione = numeroSezione; }
+
+    public String getNumeroCella()                               { return numeroCella; }
+    public void setNumeroCella(String numeroCella)               { this.numeroCella = numeroCella; }
 
     @Override
     public String toString() {
-        return Amministratore.stringify(
-            "ProductPreview",
-            List.of(
-                Amministratore.field("code", this.code),
-                Amministratore.field("name", this.name),
-                Amministratore.field("tags", this.tags)
-            )
-        );
-    }
-
-    public static final class DAO {
-
-        public static List<Detenuto> list(Connection connection) {
-            // Iterating through a resultSet:
-            // https://docs.oracle.com/javase/tutorial/jdbc/basics/retrieving.html
-            throw new UnsupportedOperationException("unimplemented");
-        }
+        return "Detenuto{matricola='" + matricolaDetenuto + "', nome='" + nome + "', stato=" + statoDellaPena + "}";
     }
 }
