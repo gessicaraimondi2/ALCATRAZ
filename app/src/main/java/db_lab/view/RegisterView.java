@@ -66,6 +66,3 @@ public class RegisterView {
         System.out.println("[REGISTER OK] " + msg);
     }
 }
- {
-    
-}

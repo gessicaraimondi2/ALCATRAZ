@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SGC — Statistiche</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-brand">SGC Sistema</div>
+    <ul class="navbar-nav">
+      <li><a href="Dashboard-admin.html">Dashboard</a></li>
+      <li><a href="Statistiche.html" class="active">Statistiche</a></li>
+    </ul>
+    <div class="navbar-user">
+      <span id="nome-admin">Admin</span>
+      <span class="badge-role admin">ADMIN</span>
+      <a href="Login.html" class="btn btn-outline btn-sm">Esci</a>
+    </div>
+  </nav>
+
+  <div class="page">
+
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Menu</div>
+        <a href="Dashboard-admin.html" class="sidebar-link">
+          <span class="sidebar-icon">🏠</span> Dashboard
+        </a>
+        <a href="#" class="sidebar-link active" onclick="showSection('generale')">
+          <span class="sidebar-icon">📊</span> Statistiche generali
+        </a>
+        <a href="#" class="sidebar-link" onclick="showSection('prenotazioni')">
+          <span class="sidebar-icon">📅</span> Statistiche prenotazioni
+        </a>
+        <a href="#" class="sidebar-link" onclick="showSection('detenuti')">
+          <span class="sidebar-icon">👥</span> Statistiche detenuti
+        </a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Sistema</div>
+        <a href="Login.html" class="sidebar-link">
+          <span class="sidebar-icon">🚪</span> Logout
+        </a>
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <!-- ── Sezione GENERALE ── -->
+      <div id="section-generale" class="animate-fadeup">
+
+        <div class="page-header">
+          <div>
+            <div class="page-title"><span class="icon">📊</span> Statistiche generali</div>
+            <div class="page-subtitle">Panoramica del sistema carcerario</div>
+          </div>
+        </div>
+
+        <!-- KPI principali -->
+        <div class="stats-grid mb-3">
+          <div class="stat-card yellow">
+            <div class="stat-label">Detenuti totali</div>
+            <div class="stat-value" id="kpi-detenuti">—</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Prenotazioni questo mese</div>
+            <div class="stat-value" id="kpi-prenotazioni-mese">—</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-label">Celle occupate</div>
+            <div class="stat-value" id="kpi-celle">—</div>
+          </div>
+          <div class="stat-card yellow">
+            <div class="stat-label">Visitatori registrati</div>
+            <div class="stat-value" id="kpi-visitatori">—</div>
+          </div>
+        </div>
+
+        <!-- Tabella riepilogo per blocco -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Occupazione per blocco</div>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Blocco</th>
+                    <th>Celle totali</th>
+                    <th>Celle occupate</th>
+                    <th>Detenuti</th>
+                    <th>Tasso occupazione</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-blocchi">
+                  <tr>
+                    <td colspan="5" class="text-center text-muted" style="padding:2rem">Caricamento…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Sezione PRENOTAZIONI ── -->
+      <div id="section-prenotazioni" class="hidden animate-fadeup">
+
+        <div class="page-header">
+          <div>
+            <div class="page-title"><span class="icon">📅</span> Statistiche prenotazioni</div>
+            <div class="page-subtitle">Analisi delle richieste di visita</div>
+          </div>
+        </div>
+
+        <div class="stats-grid mb-3">
+          <div class="stat-card yellow">
+            <div class="stat-label">In attesa</div>
+            <div class="stat-value" id="stat-attesa">—</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Confermate</div>
+            <div class="stat-value" id="stat-conf">—</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-label">Rifiutate</div>
+            <div class="stat-value" id="stat-rif">—</div>
+          </div>
+          <div class="stat-card yellow">
+            <div class="stat-label">Totale</div>
+            <div class="stat-value" id="stat-tot">—</div>
+          </div>
+        </div>
+
+        <!-- Tabella per tipo autorizzazione -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <div class="card-title">Prenotazioni per tipo autorizzazione</div>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tipo autorizzazione</th>
+                    <th>Totale</th>
+                    <th>Confermate</th>
+                    <th>Rifiutate</th>
+                    <th>In attesa</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-tipo-auth">
+                  <tr>
+                    <td colspan="5" class="text-center text-muted" style="padding:2rem">Caricamento…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabella ultime prenotazioni -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Ultime 10 prenotazioni</div>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Data</th>
+                    <th>Visitatore</th>
+                    <th>Detenuto</th>
+                    <th>Tipo</th>
+                    <th>Stato</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-ultime-pren">
+                  <tr>
+                    <td colspan="6" class="text-center text-muted" style="padding:2rem">Caricamento…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Sezione DETENUTI ── -->
+      <div id="section-detenuti" class="hidden animate-fadeup">
+
+        <div class="page-header">
+          <div>
+            <div class="page-title"><span class="icon">👥</span> Statistiche detenuti</div>
+            <div class="page-subtitle">Distribuzione e dati aggregati sulla popolazione carceraria</div>
+          </div>
+        </div>
+
+        <div class="stats-grid mb-3">
+          <div class="stat-card green">
+            <div class="stat-label">Regime ordinario</div>
+            <div class="stat-value" id="det-ordinario">—</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-label">Regime restrittivo</div>
+            <div class="stat-value" id="det-restrittivo">—</div>
+          </div>
+          <div class="stat-card yellow">
+            <div class="stat-label">In isolamento</div>
+            <div class="stat-value" id="det-isolamento">—</div>
+          </div>
+        </div>
+
+        <!-- Tabella detenuti per nazionalità -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <div class="card-title">Detenuti per nazionalità</div>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Nazionalità</th>
+                    <th>Numero detenuti</th>
+                    <th>Percentuale</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-nazionalita">
+                  <tr>
+                    <td colspan="3" class="text-center text-muted" style="padding:2rem">Caricamento…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabella detenuti per reato -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Detenuti per tipo di reato</div>
+          </div>
+          <div class="card-body">
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Reato</th>
+                    <th>Numero detenuti</th>
+                    <th>Percentuale</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-reati">
+                  <tr>
+                    <td colspan="3" class="text-center text-muted" style="padding:2rem">Caricamento…</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    /* ── Navigazione sezioni ── */
+    function showSection(name) {
+      ['generale', 'prenotazioni', 'detenuti'].forEach(s => {
+        document.getElementById('section-' + s).classList.toggle('hidden', s !== name);
+      });
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      if (name === 'prenotazioni') caricaStatPrenotazioni();
+      if (name === 'detenuti')    caricaStatDetenuti();
+    }
+
+    /* ── Barra occupazione ── */
+    function barraOccupazione(perc) {
+      return `
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <div style="flex:1;background:var(--border,#e2e8f0);border-radius:4px;height:8px;overflow:hidden">
+            <div style="width:${perc}%;height:100%;background:var(--accent,#3b82f6);border-radius:4px"></div>
+          </div>
+          <span class="mono" style="font-size:.8rem">${perc}%</span>
+        </div>`;
+    }
+
+    /* ── Statistiche generali ── */
+    async function caricaStatGenerali() {
+      /*
+       * BACKEND: GET /api/statistiche/generale
+       * Chiama model.getStatisticheGenerali()
+       */
+      let data;
+      try {
+        const res = await fetch('/api/statistiche/generale');
+        data = await res.json();
+      } catch {
+        data = {
+          totaleDetenuti: 142,
+          prenotazioniMese: 38,
+          celleOccupate: 95,
+          visitatoriRegistrati: 210,
+          blocchi: [
+            { nome: 'A', celleTotali: 30, celleOccupate: 28, detenuti: 28 },
+            { nome: 'B', celleTotali: 30, celleOccupate: 25, detenuti: 26 },
+            { nome: 'C', celleTotali: 30, celleOccupate: 22, detenuti: 22 },
+            { nome: 'D', celleTotali: 20, celleOccupate: 20, detenuti: 20 },
+          ],
+        };
+      }
+
+      document.getElementById('kpi-detenuti').textContent         = data.totaleDetenuti;
+      document.getElementById('kpi-prenotazioni-mese').textContent = data.prenotazioniMese;
+      document.getElementById('kpi-celle').textContent             = data.celleOccupate;
+      document.getElementById('kpi-visitatori').textContent        = data.visitatoriRegistrati;
+
+      const tbody = document.getElementById('tbody-blocchi');
+      tbody.innerHTML = data.blocchi.map(b => {
+        const perc = Math.round((b.celleOccupate / b.celleTotali) * 100);
+        return `
+          <tr>
+            <td><strong>Blocco ${b.nome}</strong></td>
+            <td class="mono">${b.celleTotali}</td>
+            <td class="mono">${b.celleOccupate}</td>
+            <td class="mono">${b.detenuti}</td>
+            <td style="min-width:160px">${barraOccupazione(perc)}</td>
+          </tr>`;
+      }).join('');
+    }
+
+    /* ── Statistiche prenotazioni ── */
+    async function caricaStatPrenotazioni() {
+      /*
+       * BACKEND: GET /api/statistiche/prenotazioni
+       * Chiama model.getStatistichePrenotazioni()
+       */
+      let data;
+      try {
+        const res = await fetch('/api/statistiche/prenotazioni');
+        data = await res.json();
+      } catch {
+        data = {
+          inAttesa: 12, confermate: 20, rifiutate: 6, totale: 38,
+          perTipo: [
+            { tipo: 'Familiare', totale: 22, confermate: 14, rifiutate: 4, inAttesa: 4 },
+            { tipo: 'Avvocato',  totale: 10, confermate: 5,  rifiutate: 2, inAttesa: 3 },
+            { tipo: 'Altro',     totale: 6,  confermate: 1,  rifiutate: 0, inAttesa: 5 },
+          ],
+          ultime: [
+            { idPrenotazione: 10, data: '2025-06-12', visitatore: 'Maria Russo',    matricola: 'D003', tipo: 'Familiare', stato: 'In_attesa' },
+            { idPrenotazione: 9,  data: '2025-06-11', visitatore: 'Luca Ferrari',   matricola: 'D001', tipo: 'Avvocato',  stato: 'Confermata' },
+            { idPrenotazione: 8,  data: '2025-06-10', visitatore: 'Anna Bianchi',   matricola: 'D002', tipo: 'Familiare', stato: 'Rifiutata' },
+            { idPrenotazione: 7,  data: '2025-06-09', visitatore: 'Paolo Marini',   matricola: 'D004', tipo: 'Familiare', stato: 'Confermata' },
+            { idPrenotazione: 6,  data: '2025-06-08', visitatore: 'Chiara Esposito',matricola: 'D001', tipo: 'Altro',     stato: 'In_attesa' },
+          ],
+        };
+      }
+
+      document.getElementById('stat-attesa').textContent = data.inAttesa;
+      document.getElementById('stat-conf').textContent   = data.confermate;
+      document.getElementById('stat-rif').textContent    = data.rifiutate;
+      document.getElementById('stat-tot').textContent    = data.totale;
+
+      document.getElementById('tbody-tipo-auth').innerHTML = data.perTipo.map(t => `
+        <tr>
+          <td>${t.tipo}</td>
+          <td class="mono">${t.totale}</td>
+          <td class="mono">${t.confermate}</td>
+          <td class="mono">${t.rifiutate}</td>
+          <td class="mono">${t.inAttesa}</td>
+        </tr>`).join('');
+
+      const pillaMap = { 'In_attesa': 'pill-yellow', 'Confermata': 'pill-green', 'Rifiutata': 'pill-red' };
+      const pillaLabel = { 'In_attesa': 'In attesa', 'Confermata': 'Confermata', 'Rifiutata': 'Rifiutata' };
+      document.getElementById('tbody-ultime-pren').innerHTML = data.ultime.map(p => `
+        <tr>
+          <td class="mono">#${p.idPrenotazione}</td>
+          <td>${p.data}</td>
+          <td>${p.visitatore}</td>
+          <td class="mono">${p.matricola}</td>
+          <td>${p.tipo}</td>
+          <td><span class="pill ${pillaMap[p.stato] ?? 'pill-neutral'}">${pillaLabel[p.stato] ?? p.stato}</span></td>
+        </tr>`).join('');
+    }
+
+    /* ── Statistiche detenuti ── */
+    async function caricaStatDetenuti() {
+      /*
+       * BACKEND: GET /api/statistiche/detenuti
+       * Chiama model.getStatisticheDetenuti()
+       */
+      let data;
+      try {
+        const res = await fetch('/api/statistiche/detenuti');
+        data = await res.json();
+      } catch {
+        data = {
+          regimeOrdinario: 110, regimeRestrittivo: 22, inIsolamento: 10,
+          perNazionalita: [
+            { nazionalita: 'Italiana',   count: 95 },
+            { nazionalita: 'Rumena',     count: 18 },
+            { nazionalita: 'Marocchina', count: 15 },
+            { nazionalita: 'Albanese',   count: 14 },
+          ],
+          perReato: [
+            { reato: 'Art. 416-bis c.p. (Associazione mafiosa)', count: 30 },
+            { reato: 'Art. 73 D.P.R. 309/90 (Stupefacenti)',    count: 28 },
+            { reato: 'Art. 624 c.p. (Furto)',                   count: 22 },
+            { reato: 'Art. 629 c.p. (Estorsione)',              count: 18 },
+            { reato: 'Altro',                                   count: 44 },
+          ],
+        };
+      }
+
+      document.getElementById('det-ordinario').textContent    = data.regimeOrdinario;
+      document.getElementById('det-restrittivo').textContent  = data.regimeRestrittivo;
+      document.getElementById('det-isolamento').textContent   = data.inIsolamento;
+
+      const totDet = data.perNazionalita.reduce((s, n) => s + n.count, 0);
+      document.getElementById('tbody-nazionalita').innerHTML = data.perNazionalita.map(n => `
+        <tr>
+          <td>${n.nazionalita}</td>
+          <td class="mono">${n.count}</td>
+          <td style="min-width:160px">${barraOccupazione(Math.round(n.count / totDet * 100))}</td>
+        </tr>`).join('');
+
+      const totReati = data.perReato.reduce((s, r) => s + r.count, 0);
+      document.getElementById('tbody-reati').innerHTML = data.perReato.map(r => `
+        <tr>
+          <td>${r.reato}</td>
+          <td class="mono">${r.count}</td>
+          <td style="min-width:160px">${barraOccupazione(Math.round(r.count / totReati * 100))}</td>
+        </tr>`).join('');
+    }
+
+    /* ── Avvio ── */
+    caricaStatGenerali();
+  </script>
+
+</body>
+</html>

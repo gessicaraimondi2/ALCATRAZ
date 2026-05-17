@@ -1,25 +1,45 @@
 package db_lab.Controller;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import db_lab.App;
 import db_lab.model.Model;
-import db_lab.view.StatisticheView;
 
-public class StatisticheController {
+import java.io.IOException;
+
+/**
+ * GET /api/statistiche
+ * Risposta: { tassoPartecipazione, mediaDetenutiPerSezione, prenotazioniInAttesa }
+ */
+public class StatisticheController implements HttpHandler {
 
     private final Model model;
-    private final StatisticheView view;
 
-    public StatisticheController(Model model, StatisticheView view) {
+    public StatisticheController(Model model) {
         this.model = model;
-        this.view = view;
     }
 
-    public void mostraStatistiche() {
+    @Override
+    public void handle(HttpExchange ex) throws IOException {
+        if (App.handleCors(ex)) return;
+        if (!LoginController.isAdmin(ex)) { App.sendError(ex, 403, "Accesso negato"); return; }
+
+        if (!"GET".equalsIgnoreCase(ex.getRequestMethod())) {
+            App.sendError(ex, 405, "Metodo non consentito"); return;
+        }
+
         try {
-            view.showTassoPartecipazione(model.getTassoPartecipazione());
-            view.showMediaDetenuti(model.getMediaDetenutiPerSezione());
-            view.showPrenotazioniInAttesa(model.getNumeroPrenotazioniInAttesa());
+            double tasso  = model.getTassoPartecipazione();
+            double media  = model.getMediaDetenutiPerSezione();
+            int    attesa = model.getNumeroPrenotazioniInAttesa();
+
+            App.sendJson(ex, 200,
+                "{\"tassoPartecipazione\":"    + String.format("%.1f", tasso)  +
+                ",\"mediaDetenutiPerSezione\":" + String.format("%.1f", media)  +
+                ",\"prenotazioniInAttesa\":"    + attesa                        +
+                "}");
         } catch (Exception e) {
-            view.showError(e.getMessage());
+            App.sendError(ex, 500, e.getMessage());
         }
     }
 }

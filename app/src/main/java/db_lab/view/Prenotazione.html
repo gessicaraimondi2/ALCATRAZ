@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SGC — Nuova prenotazione</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-brand">SGC Sistema</div>
+    <ul class="navbar-nav">
+      <li><a href="Dashboard-visitatore.html">Le mie prenotazioni</a></li>
+      <li><a href="Prenotazione.html" class="active">Nuova prenotazione</a></li>
+    </ul>
+    <div class="navbar-user">
+      <span id="nome-visitatore">Visitatore</span>
+      <span class="badge-role visitor">VISITATORE</span>
+      <a href="Login.html" class="btn btn-outline btn-sm">Esci</a>
+    </div>
+  </nav>
+
+  <div class="page">
+
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Menu</div>
+        <a href="Dashboard-visitatore.html" class="sidebar-link">
+          <span class="sidebar-icon">📅</span> Le mie prenotazioni
+        </a>
+        <a href="Prenotazione.html" class="sidebar-link active">
+          <span class="sidebar-icon">➕</span> Nuova prenotazione
+        </a>
+        <a href="Dashboard-visitatore.html" class="sidebar-link" onclick="event.preventDefault(); window.location='Dashboard-visitatore.html#profilo'">
+          <span class="sidebar-icon">👤</span> Il mio profilo
+        </a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Sistema</div>
+        <a href="Login.html" class="sidebar-link">
+          <span class="sidebar-icon">🚪</span> Logout
+        </a>
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <div id="section-form" class="animate-fadeup">
+
+        <div class="page-header">
+          <div>
+            <div class="page-title"><span class="icon">➕</span> Nuova prenotazione</div>
+            <div class="page-subtitle">Compila il modulo per richiedere una visita</div>
+          </div>
+          <div class="page-actions">
+            <a href="Dashboard-visitatore.html" class="btn btn-outline">← Torna indietro</a>
+          </div>
+        </div>
+
+        <!-- Alert esito -->
+        <div id="alert-box" class="hidden mb-3"></div>
+
+        <div class="card" style="max-width:700px">
+          <div class="card-header">
+            <div class="card-title">Dati richiesta di visita</div>
+          </div>
+          <div class="card-body">
+
+            <div class="form-group">
+              <label class="form-label" for="matricola-detenuto">Matricola detenuto *</label>
+              <div style="display:flex;gap:.5rem">
+                <input
+                  type="text"
+                  id="matricola-detenuto"
+                  class="form-input"
+                  placeholder="Es. D001"
+                  maxlength="10"
+                  style="flex:1"
+                />
+                <button class="btn btn-outline btn-sm" onclick="cercaDetenuto()">Cerca</button>
+              </div>
+              <div id="info-detenuto" class="hidden" style="margin-top:.5rem;padding:.75rem 1rem;background:var(--surface-2,#f8fafc);border:1px solid var(--border,#e2e8f0);border-radius:8px">
+                <div class="detail-grid" style="grid-template-columns:repeat(2,1fr)">
+                  <div class="detail-field">
+                    <div class="detail-label">Nome</div>
+                    <div class="detail-value" id="det-nome-preview">—</div>
+                  </div>
+                  <div class="detail-field">
+                    <div class="detail-label">Cognome</div>
+                    <div class="detail-value" id="det-cognome-preview">—</div>
+                  </div>
+                  <div class="detail-field">
+                    <div class="detail-label">Stato</div>
+                    <div class="detail-value" id="det-stato-preview">—</div>
+                  </div>
+                  <div class="detail-field">
+                    <div class="detail-label">Regime</div>
+                    <div class="detail-value" id="det-regime-preview">—</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="data-visita">Data visita richiesta *</label>
+              <input
+                type="date"
+                id="data-visita"
+                class="form-input"
+                min=""
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="tipo-autorizzazione">Tipo di autorizzazione *</label>
+              <select id="tipo-autorizzazione" class="form-input">
+                <option value="">— Seleziona —</option>
+                <option value="Familiare">Familiare</option>
+                <option value="Avvocato">Avvocato</option>
+                <option value="Altro">Altro</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="note">Note aggiuntive</label>
+              <textarea
+                id="note"
+                class="form-input"
+                rows="3"
+                placeholder="Eventuali informazioni aggiuntive per la richiesta…"
+                style="resize:vertical"
+              ></textarea>
+            </div>
+
+            <div style="display:flex;gap:1rem;justify-content:flex-end;margin-top:1.5rem">
+              <a href="Dashboard-visitatore.html" class="btn btn-outline">Annulla</a>
+              <button class="btn btn-primary" onclick="inviaPrenotazione()">Invia richiesta</button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Sezione CONFERMA ── -->
+      <div id="section-conferma" class="hidden animate-fadeup">
+
+        <div class="page-header">
+          <div>
+            <div class="page-title"><span class="icon">✅</span> Richiesta inviata</div>
+            <div class="page-subtitle">La tua prenotazione è stata registrata con successo</div>
+          </div>
+        </div>
+
+        <div class="card" style="max-width:600px">
+          <div class="card-body" style="text-align:center;padding:2.5rem 2rem">
+            <div style="font-size:3rem;margin-bottom:1rem">📨</div>
+            <div style="font-size:1.2rem;font-weight:600;margin-bottom:.5rem">Richiesta in attesa di approvazione</div>
+            <div class="text-muted" style="margin-bottom:2rem">
+              Riceverai una notifica quando la tua richiesta sarà processata dall'amministrazione.
+            </div>
+            <div class="detail-grid" style="grid-template-columns:repeat(2,1fr);text-align:left;margin-bottom:2rem">
+              <div class="detail-field">
+                <div class="detail-label">ID prenotazione</div>
+                <div class="detail-value mono" id="conf-id">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Data visita</div>
+                <div class="detail-value" id="conf-data">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Detenuto</div>
+                <div class="detail-value mono" id="conf-detenuto">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Tipo autorizzazione</div>
+                <div class="detail-value" id="conf-tipo">—</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:1rem;justify-content:center">
+              <a href="Dashboard-visitatore.html" class="btn btn-outline">Le mie prenotazioni</a>
+              <button class="btn btn-primary" onclick="nuovaPrenotazione()">Nuova prenotazione</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    /* ── Data minima = oggi ── */
+    const oggi = new Date().toISOString().split('T')[0];
+    document.getElementById('data-visita').min = oggi;
+
+    /* ── Mostra alert ── */
+    function mostraAlert(msg, tipo) {
+      // tipo: 'success' | 'error' | 'info'
+      const colori = {
+        success: 'var(--green,#22c55e)',
+        error:   'var(--red,#ef4444)',
+        info:    'var(--accent,#3b82f6)',
+      };
+      const box = document.getElementById('alert-box');
+      box.style.cssText = `
+        padding:.75rem 1rem;
+        border-radius:8px;
+        border-left:4px solid ${colori[tipo] ?? colori.info};
+        background:var(--surface-2,#f8fafc);
+        color:var(--text,#1e293b);
+        font-size:.9rem;
+      `;
+      box.textContent = msg;
+      box.classList.remove('hidden');
+      setTimeout(() => box.classList.add('hidden'), 5000);
+    }
+
+    /* ── Cerca detenuto ── */
+    async function cercaDetenuto() {
+      const matricola = document.getElementById('matricola-detenuto').value.trim();
+      if (!matricola) { mostraAlert('Inserisci una matricola.', 'error'); return; }
+
+      /*
+       * BACKEND: GET /api/detenuti/:matricola
+       * Chiama model.getDetenutiByMatricola(matricola)
+       */
+      let d;
+      try {
+        const res = await fetch(`/api/detenuti/${matricola}`);
+        if (!res.ok) throw new Error();
+        d = await res.json();
+      } catch {
+        // Fallback demo
+        if (matricola.toUpperCase() === 'D001') {
+          d = { nome: 'Giuseppe', cognome: 'Verdi', stato: 'Detenuto', regime: 'Ordinario' };
+        } else {
+          mostraAlert('Detenuto non trovato. Verifica la matricola.', 'error');
+          document.getElementById('info-detenuto').classList.add('hidden');
+          return;
+        }
+      }
+
+      document.getElementById('det-nome-preview').textContent    = d.nome;
+      document.getElementById('det-cognome-preview').textContent = d.cognome;
+      document.getElementById('det-stato-preview').textContent   = d.stato;
+      document.getElementById('det-regime-preview').textContent  = d.regime;
+      document.getElementById('info-detenuto').classList.remove('hidden');
+      mostraAlert('Detenuto trovato.', 'success');
+    }
+
+    /* ── Invia prenotazione ── */
+    async function inviaPrenotazione() {
+      const matricola = document.getElementById('matricola-detenuto').value.trim();
+      const data      = document.getElementById('data-visita').value;
+      const tipo      = document.getElementById('tipo-autorizzazione').value;
+      const note      = document.getElementById('note').value.trim();
+
+      if (!matricola) { mostraAlert('Inserisci la matricola del detenuto.', 'error'); return; }
+      if (!data)      { mostraAlert('Seleziona una data per la visita.', 'error'); return; }
+      if (!tipo)      { mostraAlert('Seleziona il tipo di autorizzazione.', 'error'); return; }
+      if (document.getElementById('info-detenuto').classList.contains('hidden')) {
+        mostraAlert('Cerca prima il detenuto per verificarne la matricola.', 'error');
+        return;
+      }
+
+      const payload = {
+        matricolaDetenuto:  matricola,
+        data:               data,
+        tipoAutorizzazione: tipo,
+        note:               note || null,
+      };
+
+      /*
+       * BACKEND: POST /api/prenotazioni
+       * Chiama model.insertPrenotazione(accountID, payload)
+       */
+      let risposta;
+      try {
+        const res = await fetch('/api/prenotazioni', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(payload),
+        });
+        risposta = await res.json();
+      } catch {
+        // Fallback demo
+        risposta = { idPrenotazione: Math.floor(Math.random() * 900) + 100 };
+      }
+
+      // Mostra schermata di conferma
+      document.getElementById('conf-id').textContent       = `#${risposta.idPrenotazione}`;
+      document.getElementById('conf-data').textContent     = data;
+      document.getElementById('conf-detenuto').textContent = matricola;
+      document.getElementById('conf-tipo').textContent     = tipo;
+
+      document.getElementById('section-form').classList.add('hidden');
+      document.getElementById('section-conferma').classList.remove('hidden');
+    }
+
+    /* ── Reset form ── */
+    function nuovaPrenotazione() {
+      document.getElementById('matricola-detenuto').value  = '';
+      document.getElementById('data-visita').value         = '';
+      document.getElementById('tipo-autorizzazione').value = '';
+      document.getElementById('note').value                = '';
+      document.getElementById('info-detenuto').classList.add('hidden');
+      document.getElementById('section-conferma').classList.add('hidden');
+      document.getElementById('section-form').classList.remove('hidden');
+    }
+  </script>
+
+</body>
+</html>

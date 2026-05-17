@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SGC — Accesso</title>
+  <link rel="stylesheet" href="css/Style.css" />
+</head>
+<body>
+
+  <div class="auth-page">
+    <div class="auth-box">
+
+      <div class="auth-logo">
+        <div class="brand">SGC Sistema</div>
+        <div class="title">Accesso</div>
+        <div class="subtitle">Inserisci le tue credenziali per continuare</div>
+      </div>
+
+      <div class="alert alert-error hidden" id="alert-error">
+        ⚠ <span id="alert-msg">Credenziali non valide.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" placeholder="nome@esempio.it" autocomplete="email" />
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+
+      <div class="form-group">
+        <label for="ruolo">Accedi come</label>
+        <select id="ruolo">
+          <option value="visitatore">Visitatore</option>
+          <option value="amministratore">Amministratore</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary btn-full btn-lg mt-2" id="btn-login">
+        Accedi
+      </button>
+
+      <div class="auth-divider">oppure</div>
+
+      <div class="auth-footer">
+        Non hai un account?
+        <a href="Register.html">Registrati come visitatore</a>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    async function handleLogin() {
+      const email    = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const ruolo    = document.getElementById('ruolo').value;
+      const alertEl  = document.getElementById('alert-error');
+      const msgEl    = document.getElementById('alert-msg');
+      const btn      = document.getElementById('btn-login');
+
+      alertEl.classList.add('hidden');
+
+      if (!email || !password) {
+        msgEl.textContent = 'Compila tutti i campi.';
+        alertEl.classList.remove('hidden');
+        return;
+      }
+
+      btn.textContent = 'Accesso in corso…';
+      btn.disabled = true;
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, ruolo })
+        });
+
+        const data = await res.json();
+
+        if (data.ok) {
+          // Salva token e info utente per le chiamate successive
+          sessionStorage.setItem('token', data.token);
+          sessionStorage.setItem('ruolo', data.ruolo);
+          sessionStorage.setItem('nome',  data.nome);
+
+          window.location.href = data.ruolo === 'amministratore'
+            ? 'Dashboard-admin.html'
+            : 'Dashboard-visitatore.html';
+        } else {
+          msgEl.textContent = data.message || 'Credenziali non valide.';
+          alertEl.classList.remove('hidden');
+          btn.textContent = 'Accedi';
+          btn.disabled = false;
+        }
+      } catch (err) {
+        msgEl.textContent = 'Errore di connessione al server.';
+        alertEl.classList.remove('hidden');
+        btn.textContent = 'Accedi';
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById('btn-login').addEventListener('click', handleLogin);
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') handleLogin(); });
+  </script>
+
+</body>
+</html>

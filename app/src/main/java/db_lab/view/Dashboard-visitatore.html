@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SGC — Area Visitatore</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-brand">SGC Sistema</div>
+    <ul class="navbar-nav">
+      <li><a href="Dashboard-visitatore.html" class="active">Le mie prenotazioni</a></li>
+      <li><a href="Prenotazione.html">Nuova prenotazione</a></li>
+    </ul>
+    <div class="navbar-user">
+      <span id="nome-visitatore">Visitatore</span>
+      <span class="badge-role visitor">VISITATORE</span>
+      <a href="Login.html" class="btn btn-outline btn-sm">Esci</a>
+    </div>
+  </nav>
+
+  <div class="page">
+
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Menu</div>
+        <a href="#" class="sidebar-link active" onclick="showSection('prenotazioni')">
+          <span class="sidebar-icon">📅</span> Le mie prenotazioni
+        </a>
+        <a href="Prenotazione.html" class="sidebar-link">
+          <span class="sidebar-icon">➕</span> Nuova prenotazione
+        </a>
+        <a href="#" class="sidebar-link" onclick="showSection('profilo')">
+          <span class="sidebar-icon">👤</span> Il mio profilo
+        </a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Sistema</div>
+        <a href="Login.html" class="sidebar-link">
+          <span class="sidebar-icon">🚪</span> Logout
+        </a>
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <!-- ── Sezione PRENOTAZIONI ── -->
+      <div id="section-prenotazioni" class="animate-fadeup">
+
+        <div class="page-header">
+          <div>
+            <div class="page-title"><span class="icon">📅</span> Le mie prenotazioni</div>
+            <div class="page-subtitle">Storico e stato delle tue richieste di visita</div>
+          </div>
+          <div class="page-actions">
+            <a href="Prenotazione.html" class="btn btn-primary">+ Nuova prenotazione</a>
+          </div>
+        </div>
+
+        <!-- Riepilogo -->
+        <div class="stats-grid mb-3">
+          <div class="stat-card yellow">
+            <div class="stat-label">In attesa</div>
+            <div class="stat-value" id="cnt-attesa">—</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Confermate</div>
+            <div class="stat-value" id="cnt-conf">—</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-label">Rifiutate</div>
+            <div class="stat-value" id="cnt-rif">—</div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Data</th>
+                <th>Detenuto</th>
+                <th>Tipo autorizzazione</th>
+                <th>Stato</th>
+                <th>Motivo rifiuto</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-mie-prenotazioni">
+              <tr>
+                <td colspan="7" class="text-center text-muted" style="padding:2rem">Caricamento…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ── Sezione PROFILO ── -->
+      <div id="section-profilo" class="hidden animate-fadeup">
+
+        <div class="page-header">
+          <div>
+            <div class="page-title"><span class="icon">👤</span> Il mio profilo</div>
+          </div>
+        </div>
+
+        <div class="card" style="max-width:600px">
+          <div class="card-header">
+            <div class="card-title">Dati personali</div>
+            <button class="btn btn-outline btn-sm" onclick="abilitaModifica()">Modifica</button>
+          </div>
+          <div class="card-body">
+            <div class="detail-grid">
+              <div class="detail-field">
+                <div class="detail-label">Nome</div>
+                <div class="detail-value" id="prof-nome">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Cognome</div>
+                <div class="detail-value" id="prof-cognome">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Email</div>
+                <div class="detail-value" id="prof-email">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Codice Fiscale</div>
+                <div class="detail-value mono" id="prof-cf">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Data di nascita</div>
+                <div class="detail-value" id="prof-nascita">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    /* ── Navigazione sezioni ── */
+    function showSection(name) {
+      ['prenotazioni','profilo'].forEach(s => {
+        document.getElementById('section-' + s).classList.toggle('hidden', s !== name);
+      });
+      if (name === 'profilo') caricaProfilo();
+    }
+
+    /* ── Badge stato ── */
+    function pillaStato(stato) {
+      const map = {
+        'In_attesa':  '<span class="pill pill-yellow">In attesa</span>',
+        'Confermata': '<span class="pill pill-green">Confermata</span>',
+        'Rifiutata':  '<span class="pill pill-red">Rifiutata</span>',
+      };
+      return map[stato] ?? `<span class="pill pill-neutral">${stato}</span>`;
+    }
+
+    /* ── Prenotazioni visitatore ── */
+    async function caricaMiePrenotazioni() {
+      /*
+       * BACKEND: GET /api/prenotazioni/mie  (filtra per accountID in sessione)
+       * Chiama model.getPrenotazioniByVisitatore(accountID)
+       */
+      let lista;
+      try {
+        const res = await fetch('/api/prenotazioni/mie');
+        lista = await res.json();
+      } catch {
+        lista = [
+          { idPrenotazione:1, data:'2025-06-10', matricolaDetenuto:'D001',
+            tipoAutorizzazione:'Familiare', esitoPrenotazione:'In_attesa',
+            motivoRifiuto: null },
+          { idPrenotazione:2, data:'2025-05-20', matricolaDetenuto:'D001',
+            tipoAutorizzazione:'Avvocato', esitoPrenotazione:'Confermata',
+            motivoRifiuto: null },
+          { idPrenotazione:3, data:'2025-04-15', matricolaDetenuto:'D002',
+            tipoAutorizzazione:'Familiare', esitoPrenotazione:'Rifiutata',
+            motivoRifiuto: 'Detenuto in isolamento' },
+        ];
+      }
+
+      // Contatori
+      document.getElementById('cnt-attesa').textContent = lista.filter(p => p.esitoPrenotazione === 'In_attesa').length;
+      document.getElementById('cnt-conf').textContent   = lista.filter(p => p.esitoPrenotazione === 'Confermata').length;
+      document.getElementById('cnt-rif').textContent    = lista.filter(p => p.esitoPrenotazione === 'Rifiutata').length;
+
+      const tbody = document.getElementById('tbody-mie-prenotazioni');
+      if (!lista.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:2rem">Nessuna prenotazione</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = lista.map(p => `
+        <tr>
+          <td class="mono">#${p.idPrenotazione}</td>
+          <td>${p.data}</td>
+          <td class="mono">${p.matricolaDetenuto}</td>
+          <td>${p.tipoAutorizzazione}</td>
+          <td>${pillaStato(p.esitoPrenotazione)}</td>
+          <td>${p.motivoRifiuto ?? '<span class="text-muted">—</span>'}</td>
+          <td>
+            ${p.esitoPrenotazione === 'In_attesa'
+              ? `<button class="btn btn-danger btn-sm" onclick="annullaPrenotazione(${p.idPrenotazione})">Annulla</button>`
+              : '—'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function annullaPrenotazione(id) {
+      if (!confirm('Annullare la prenotazione #' + id + '?')) return;
+      try {
+        await fetch(`/api/prenotazioni/${id}`, { method: 'DELETE' });
+      } catch {}
+      caricaMiePrenotazioni();
+    }
+
+    /* ── Profilo ── */
+    async function caricaProfilo() {
+      try {
+        const res  = await fetch('/api/me');
+        const data = await res.json();
+        document.getElementById('prof-nome').textContent    = data.nome;
+        document.getElementById('prof-cognome').textContent = data.cognome;
+        document.getElementById('prof-email').textContent   = data.email;
+        document.getElementById('prof-cf').textContent      = data.codiceFiscale;
+        document.getElementById('prof-nascita').textContent = data.dataNascita;
+      } catch {
+        document.getElementById('prof-nome').textContent    = 'Mario';
+        document.getElementById('prof-cognome').textContent = 'Rossi';
+        document.getElementById('prof-email').textContent   = 'mario.rossi@email.it';
+        document.getElementById('prof-cf').textContent      = 'RSSMRA80A01H501U';
+        document.getElementById('prof-nascita').textContent = '01/01/1980';
+      }
+    }
+
+    function abilitaModifica() {
+      alert('Form modifica profilo — da implementare.');
+    }
+
+    /* ── Avvio ── */
+    caricaMiePrenotazioni();
+  </script>
+
+</body>
+</html>

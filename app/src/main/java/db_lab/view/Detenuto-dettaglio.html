@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SGC — Dettaglio Detenuto</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-brand">SGC Sistema</div>
+    <ul class="navbar-nav">
+      <li><a href="Dashboard-admin.html" class="active">Dashboard</a></li>
+      <li><a href="Statistiche.html">Statistiche</a></li>
+    </ul>
+    <div class="navbar-user">
+      <span id="nome-admin">Admin</span>
+      <span class="badge-role admin">ADMIN</span>
+      <a href="Login.html" class="btn btn-outline btn-sm">Esci</a>
+    </div>
+  </nav>
+
+  <div class="page">
+
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Navigazione</div>
+        <a href="Dashboard-admin.html" class="sidebar-link">
+          <span class="sidebar-icon">🏠</span> Dashboard
+        </a>
+        <a href="Statistiche.html" class="sidebar-link">
+          <span class="sidebar-icon">📊</span> Statistiche
+        </a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Detenuto</div>
+        <a href="#" class="sidebar-link active" onclick="showSection('anagrafica')">
+          <span class="sidebar-icon">👤</span> Anagrafica
+        </a>
+        <a href="#" class="sidebar-link" onclick="showSection('prenotazioni')">
+          <span class="sidebar-icon">📅</span> Prenotazioni
+        </a>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Sistema</div>
+        <a href="Login.html" class="sidebar-link">
+          <span class="sidebar-icon">🚪</span> Logout
+        </a>
+      </div>
+    </aside>
+
+    <main class="main">
+
+      <!-- ── Sezione ANAGRAFICA ── -->
+      <div id="section-anagrafica" class="animate-fadeup">
+
+        <div class="page-header">
+          <div>
+            <div class="page-title"><span class="icon">👤</span> Dettaglio Detenuto</div>
+            <div class="page-subtitle">Scheda anagrafica e informazioni detentive</div>
+          </div>
+          <div class="page-actions">
+            <button class="btn btn-outline" onclick="history.back()">← Torna indietro</button>
+            <button class="btn btn-primary" onclick="abilitaModifica()">Modifica</button>
+          </div>
+        </div>
+
+        <!-- Riepilogo stato -->
+        <div class="stats-grid mb-3">
+          <div class="stat-card yellow">
+            <div class="stat-label">Cella</div>
+            <div class="stat-value" id="info-cella">—</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Stato</div>
+            <div class="stat-value" id="info-stato">—</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-label">Fine pena</div>
+            <div class="stat-value" id="info-fine-pena">—</div>
+          </div>
+        </div>
+
+        <!-- Dati anagrafici -->
+        <div class="card mb-3">
+          <div class="card-header">
+            <div class="card-title">Dati anagrafici</div>
+          </div>
+          <div class="card-body">
+            <div class="detail-grid">
+              <div class="detail-field">
+                <div class="detail-label">Matricola</div>
+                <div class="detail-value mono" id="det-matricola">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Nome</div>
+                <div class="detail-value" id="det-nome">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Cognome</div>
+                <div class="detail-value" id="det-cognome">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Codice Fiscale</div>
+                <div class="detail-value mono" id="det-cf">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Data di nascita</div>
+                <div class="detail-value" id="det-nascita">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Nazionalità</div>
+                <div class="detail-value" id="det-nazionalita">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Dati detentivi -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Dati detentivi</div>
+          </div>
+          <div class="card-body">
+            <div class="detail-grid">
+              <div class="detail-field">
+                <div class="detail-label">Reato</div>
+                <div class="detail-value" id="det-reato">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Data inizio pena</div>
+                <div class="detail-value" id="det-inizio-pena">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Data fine pena</div>
+                <div class="detail-value" id="det-fine-pena">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Blocco</div>
+                <div class="detail-value" id="det-blocco">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Cella</div>
+                <div class="detail-value" id="det-cella">—</div>
+              </div>
+              <div class="detail-field">
+                <div class="detail-label">Regime detentivo</div>
+                <div class="detail-value" id="det-regime">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ── Sezione PRENOTAZIONI ── -->
+      <div id="section-prenotazioni" class="hidden animate-fadeup">
+
+        <div class="page-header">
+          <div>
+            <div class="page-title"><span class="icon">📅</span> Prenotazioni visita</div>
+            <div class="page-subtitle">Storico richieste di visita per questo detenuto</div>
+          </div>
+        </div>
+
+        <!-- Contatori -->
+        <div class="stats-grid mb-3">
+          <div class="stat-card yellow">
+            <div class="stat-label">In attesa</div>
+            <div class="stat-value" id="cnt-attesa">—</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-label">Confermate</div>
+            <div class="stat-value" id="cnt-conf">—</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-label">Rifiutate</div>
+            <div class="stat-value" id="cnt-rif">—</div>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Data</th>
+                <th>Visitatore</th>
+                <th>Tipo autorizzazione</th>
+                <th>Stato</th>
+                <th>Motivo rifiuto</th>
+                <th>Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-prenotazioni-det">
+              <tr>
+                <td colspan="7" class="text-center text-muted" style="padding:2rem">Caricamento…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    /* ── Leggi matricola dalla URL ── */
+    const params = new URLSearchParams(location.search);
+    const matricola = params.get('matricola') ?? 'D001';
+
+    /* ── Navigazione sezioni ── */
+    function showSection(name) {
+      ['anagrafica', 'prenotazioni'].forEach(s => {
+        document.getElementById('section-' + s).classList.toggle('hidden', s !== name);
+      });
+      document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      if (name === 'prenotazioni') caricaPrenotazioniDetenuto();
+    }
+
+    /* ── Badge stato ── */
+    function pillaStato(stato) {
+      const map = {
+        'In_attesa':  '<span class="pill pill-yellow">In attesa</span>',
+        'Confermata': '<span class="pill pill-green">Confermata</span>',
+        'Rifiutata':  '<span class="pill pill-red">Rifiutata</span>',
+      };
+      return map[stato] ?? `<span class="pill pill-neutral">${stato}</span>`;
+    }
+
+    /* ── Carica dati detenuto ── */
+    async function caricaDetenuto() {
+      /*
+       * BACKEND: GET /api/detenuti/:matricola
+       * Chiama model.getDetenutiByMatricola(matricola)
+       */
+      let d;
+      try {
+        const res = await fetch(`/api/detenuti/${matricola}`);
+        d = await res.json();
+      } catch {
+        d = {
+          matricola:      'D001',
+          nome:           'Giuseppe',
+          cognome:        'Verdi',
+          codiceFiscale:  'VRDGPP75B10F205X',
+          dataNascita:    '10/02/1975',
+          nazionalita:    'Italiana',
+          reato:          'Art. 416-bis c.p.',
+          inizioPena:     '12/03/2020',
+          finePena:       '12/03/2030',
+          blocco:         'B',
+          cella:          '14',
+          regime:         'Ordinario',
+          stato:          'Detenuto',
+        };
+      }
+
+      document.getElementById('info-cella').textContent    = `B-${d.cella ?? '—'}`;
+      document.getElementById('info-stato').textContent    = d.stato ?? '—';
+      document.getElementById('info-fine-pena').textContent = d.finePena ?? '—';
+
+      document.getElementById('det-matricola').textContent  = d.matricola;
+      document.getElementById('det-nome').textContent       = d.nome;
+      document.getElementById('det-cognome').textContent    = d.cognome;
+      document.getElementById('det-cf').textContent         = d.codiceFiscale;
+      document.getElementById('det-nascita').textContent    = d.dataNascita;
+      document.getElementById('det-nazionalita').textContent = d.nazionalita;
+      document.getElementById('det-reato').textContent      = d.reato;
+      document.getElementById('det-inizio-pena').textContent = d.inizioPena;
+      document.getElementById('det-fine-pena').textContent  = d.finePena;
+      document.getElementById('det-blocco').textContent     = d.blocco;
+      document.getElementById('det-cella').textContent      = d.cella;
+      document.getElementById('det-regime').textContent     = d.regime;
+    }
+
+    /* ── Carica prenotazioni del detenuto ── */
+    async function caricaPrenotazioniDetenuto() {
+      /*
+       * BACKEND: GET /api/prenotazioni?matricola=:matricola
+       * Chiama model.getPrenotazioniByDetenuto(matricola)
+       */
+      let lista;
+      try {
+        const res = await fetch(`/api/prenotazioni?matricola=${matricola}`);
+        lista = await res.json();
+      } catch {
+        lista = [
+          { idPrenotazione: 1, data: '2025-06-10', visitatore: 'Mario Rossi',
+            tipoAutorizzazione: 'Familiare', esitoPrenotazione: 'In_attesa', motivoRifiuto: null },
+          { idPrenotazione: 2, data: '2025-05-01', visitatore: 'Anna Bianchi',
+            tipoAutorizzazione: 'Avvocato', esitoPrenotazione: 'Confermata', motivoRifiuto: null },
+          { idPrenotazione: 3, data: '2025-03-20', visitatore: 'Luigi Neri',
+            tipoAutorizzazione: 'Familiare', esitoPrenotazione: 'Rifiutata', motivoRifiuto: 'Regime restrittivo attivo' },
+        ];
+      }
+
+      document.getElementById('cnt-attesa').textContent = lista.filter(p => p.esitoPrenotazione === 'In_attesa').length;
+      document.getElementById('cnt-conf').textContent   = lista.filter(p => p.esitoPrenotazione === 'Confermata').length;
+      document.getElementById('cnt-rif').textContent    = lista.filter(p => p.esitoPrenotazione === 'Rifiutata').length;
+
+      const tbody = document.getElementById('tbody-prenotazioni-det');
+      if (!lista.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:2rem">Nessuna prenotazione</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = lista.map(p => `
+        <tr>
+          <td class="mono">#${p.idPrenotazione}</td>
+          <td>${p.data}</td>
+          <td>${p.visitatore}</td>
+          <td>${p.tipoAutorizzazione}</td>
+          <td>${pillaStato(p.esitoPrenotazione)}</td>
+          <td>${p.motivoRifiuto ?? '<span class="text-muted">—</span>'}</td>
+          <td>
+            ${p.esitoPrenotazione === 'In_attesa' ? `
+              <button class="btn btn-primary btn-sm" onclick="gestisciPrenotazione(${p.idPrenotazione}, 'Confermata')">Approva</button>
+              <button class="btn btn-danger btn-sm" onclick="gestisciPrenotazione(${p.idPrenotazione}, 'Rifiutata')">Rifiuta</button>
+            ` : '—'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function gestisciPrenotazione(id, esito) {
+      const motivo = esito === 'Rifiutata' ? prompt('Motivo del rifiuto:') : null;
+      if (esito === 'Rifiutata' && !motivo) return;
+      try {
+        await fetch(`/api/prenotazioni/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ esitoPrenotazione: esito, motivoRifiuto: motivo }),
+        });
+      } catch {}
+      caricaPrenotazioniDetenuto();
+    }
+
+    function abilitaModifica() {
+      alert('Form modifica detenuto — da implementare.');
+    }
+
+    /* ── Avvio ── */
+    caricaDetenuto();
+  </script>
+
+</body>
+</html>
