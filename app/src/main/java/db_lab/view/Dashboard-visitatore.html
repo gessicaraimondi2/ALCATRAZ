@@ -4,247 +4,308 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SGC — Area Visitatore</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/Style.css" />
+  <style>
+    body { margin: 0; display: flex; min-height: 100vh; }
+
+    .sidebar {
+      width: 220px; min-height: 100vh; background: var(--color-surface, #1a1a2e);
+      display: flex; flex-direction: column; padding: 24px 0; position: fixed;
+      border-right: 1px solid rgba(255,255,255,0.08);
+    }
+    .sidebar-brand {
+      padding: 0 24px 24px; font-size: 1.1rem; font-weight: 700;
+      border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 16px;
+    }
+    .sidebar-brand span { color: var(--color-accent, #e63946); }
+    .nav-item {
+      padding: 12px 24px; cursor: pointer; transition: background .15s;
+      font-size: .92rem; display: flex; align-items: center; gap: 10px;
+      color: rgba(255,255,255,0.7);
+    }
+    .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.06); color: #fff; }
+    .nav-item .icon { font-size: 1.1rem; width: 20px; text-align: center; }
+
+    .main { margin-left: 220px; flex: 1; padding: 32px; }
+
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+    .page-title  { font-size: 1.6rem; font-weight: 700; }
+    .user-badge  { font-size: .9rem; opacity: .8; }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    /* Cards prenotazioni */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .pren-card {
+      background: rgba(255,255,255,0.05); border-radius: 10px; padding: 20px;
+      border: 1px solid rgba(255,255,255,0.08); transition: border-color .2s;
+    }
+    .pren-card:hover { border-color: rgba(255,255,255,0.2); }
+    .pren-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .pren-id { font-size: .8rem; opacity: .5; }
+    .pren-data { font-size: 1.1rem; font-weight: 600; }
+    .pren-det { font-size: .85rem; opacity: .7; margin: 4px 0; }
+
+    .badge { padding: 3px 10px; border-radius: 20px; font-size: .78rem; font-weight: 600; }
+    .badge-In_attesa  { background: rgba(255,193,7,.15);  color: #ffc107; }
+    .badge-Confermata { background: rgba(40,167,69,.15);  color: #28a745; }
+    .badge-Rifiutata  { background: rgba(220,53,69,.15);  color: #dc3545; }
+
+    /* Form nuova prenotazione */
+    .form-card {
+      background: rgba(255,255,255,0.05); border-radius: 12px; padding: 28px;
+      border: 1px solid rgba(255,255,255,0.08); max-width: 500px;
+    }
+    .form-card .form-group { margin-bottom: 16px; }
+    .form-card label { display: block; font-size: .85rem; opacity: .7; margin-bottom: 6px; }
+    .form-card input, .form-card select {
+      width: 100%; padding: 10px 12px; border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05);
+      color: inherit; font-size: .9rem; box-sizing: border-box;
+    }
+
+    /* Profilo */
+    .profile-card {
+      background: rgba(255,255,255,0.05); border-radius: 12px; padding: 32px;
+      border: 1px solid rgba(255,255,255,0.08); max-width: 460px;
+    }
+    .profile-avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--color-accent, #e63946); display: flex; align-items: center;
+      justify-content: center; font-size: 2rem; margin-bottom: 20px;
+    }
+    .profile-row { display: flex; justify-content: space-between; padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06); font-size: .9rem; }
+    .profile-row:last-child { border-bottom: none; }
+    .profile-label { opacity: .6; }
+
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; padding: 12px 20px;
+      border-radius: 8px; font-size: .9rem; z-index: 999; display: none;
+      animation: slideIn .3s ease;
+    }
+    @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    .empty-state { text-align: center; padding: 60px 20px; opacity: .5; }
+    .empty-state .icon { font-size: 3rem; margin-bottom: 12px; }
+
+    .btn-sm { padding: 5px 12px; font-size: .8rem; border-radius: 5px; }
+    .btn-danger { background: #dc3545; color: #fff; border: none; cursor: pointer; }
+  </style>
 </head>
 <body>
 
-  <nav class="navbar">
-    <div class="navbar-brand">SGC Sistema</div>
-    <ul class="navbar-nav">
-      <li><a href="Dashboard-visitatore.html" class="active">Le mie prenotazioni</a></li>
-      <li><a href="Prenotazione.html">Nuova prenotazione</a></li>
-    </ul>
-    <div class="navbar-user">
-      <span id="nome-visitatore">Visitatore</span>
-      <span class="badge-role visitor">VISITATORE</span>
-      <a href="Login.html" class="btn btn-outline btn-sm">Esci</a>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-brand"><span>SGC</span> Visitatore</div>
+    <div class="nav-item active" onclick="showSection('prenotazioni')"><span class="icon">📅</span> Le mie prenotazioni</div>
+    <div class="nav-item" onclick="showSection('nuova')">            <span class="icon">➕</span> Nuova prenotazione</div>
+    <div class="nav-item" onclick="showSection('profilo')">          <span class="icon">👤</span> Il mio profilo</div>
+    <div class="nav-item" style="margin-top:auto" onclick="logout()"><span class="icon">🚪</span> Logout</div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="page-header">
+      <div class="page-title" id="section-title">Le mie prenotazioni</div>
+      <div class="user-badge">👤 <span id="nome-utente"></span></div>
     </div>
-  </nav>
 
-  <div class="page">
-
-    <aside class="sidebar">
-      <div class="sidebar-section">
-        <div class="sidebar-label">Menu</div>
-        <a href="#" class="sidebar-link active" onclick="showSection('prenotazioni')">
-          <span class="sidebar-icon">📅</span> Le mie prenotazioni
-        </a>
-        <a href="Prenotazione.html" class="sidebar-link">
-          <span class="sidebar-icon">➕</span> Nuova prenotazione
-        </a>
-        <a href="#" class="sidebar-link" onclick="showSection('profilo')">
-          <span class="sidebar-icon">👤</span> Il mio profilo
-        </a>
+    <!-- LE MIE PRENOTAZIONI -->
+    <div class="section active" id="sec-prenotazioni">
+      <div class="cards-grid" id="cards-prenotazioni">
+        <div class="empty-state"><div class="icon">📭</div>Caricamento…</div>
       </div>
-      <div class="sidebar-section">
-        <div class="sidebar-label">Sistema</div>
-        <a href="Login.html" class="sidebar-link">
-          <span class="sidebar-icon">🚪</span> Logout
-        </a>
+    </div>
+
+    <!-- NUOVA PRENOTAZIONE -->
+    <div class="section" id="sec-nuova">
+      <div class="form-card">
+        <h3 style="margin-top:0;margin-bottom:20px">Nuova prenotazione visita</h3>
+
+        <div class="form-group">
+          <label>Matricola detenuto</label>
+          <input id="n-matricola" placeholder="es. DET001" />
+        </div>
+        <div class="form-group">
+          <label>Data visita</label>
+          <input id="n-data" type="date" />
+        </div>
+        <div class="form-group">
+          <label>Tipo autorizzazione</label>
+          <select id="n-tipo">
+            <option value="Familiare">Familiare</option>
+            <option value="Avvocato">Avvocato</option>
+            <option value="Altro">Altro</option>
+          </select>
+        </div>
+
+        <div class="alert alert-error hidden" id="n-alert" style="margin-bottom:14px">
+          ⚠ <span id="n-alert-msg"></span>
+        </div>
+
+        <button class="btn btn-primary btn-full" onclick="inviaPrenotazione()">
+          Invia prenotazione
+        </button>
+
+        <p style="font-size:.82rem;opacity:.5;margin-top:14px;text-align:center">
+          La prenotazione verrà esaminata dall'amministratore.
+        </p>
       </div>
-    </aside>
+    </div>
 
-    <main class="main">
-
-      <!-- ── Sezione PRENOTAZIONI ── -->
-      <div id="section-prenotazioni" class="animate-fadeup">
-
-        <div class="page-header">
-          <div>
-            <div class="page-title"><span class="icon">📅</span> Le mie prenotazioni</div>
-            <div class="page-subtitle">Storico e stato delle tue richieste di visita</div>
-          </div>
-          <div class="page-actions">
-            <a href="Prenotazione.html" class="btn btn-primary">+ Nuova prenotazione</a>
-          </div>
-        </div>
-
-        <!-- Riepilogo -->
-        <div class="stats-grid mb-3">
-          <div class="stat-card yellow">
-            <div class="stat-label">In attesa</div>
-            <div class="stat-value" id="cnt-attesa">—</div>
-          </div>
-          <div class="stat-card green">
-            <div class="stat-label">Confermate</div>
-            <div class="stat-value" id="cnt-conf">—</div>
-          </div>
-          <div class="stat-card red">
-            <div class="stat-label">Rifiutate</div>
-            <div class="stat-value" id="cnt-rif">—</div>
-          </div>
-        </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Data</th>
-                <th>Detenuto</th>
-                <th>Tipo autorizzazione</th>
-                <th>Stato</th>
-                <th>Motivo rifiuto</th>
-                <th>Azioni</th>
-              </tr>
-            </thead>
-            <tbody id="tbody-mie-prenotazioni">
-              <tr>
-                <td colspan="7" class="text-center text-muted" style="padding:2rem">Caricamento…</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+    <!-- PROFILO -->
+    <div class="section" id="sec-profilo">
+      <div class="profile-card">
+        <div class="profile-avatar">👤</div>
+        <div class="profile-row"><span class="profile-label">Nome</span>      <span id="pr-nome"></span></div>
+        <div class="profile-row"><span class="profile-label">Ruolo</span>     <span>Visitatore</span></div>
       </div>
+    </div>
 
-      <!-- ── Sezione PROFILO ── -->
-      <div id="section-profilo" class="hidden animate-fadeup">
+  </main>
 
-        <div class="page-header">
-          <div>
-            <div class="page-title"><span class="icon">👤</span> Il mio profilo</div>
-          </div>
-        </div>
-
-        <div class="card" style="max-width:600px">
-          <div class="card-header">
-            <div class="card-title">Dati personali</div>
-            <button class="btn btn-outline btn-sm" onclick="abilitaModifica()">Modifica</button>
-          </div>
-          <div class="card-body">
-            <div class="detail-grid">
-              <div class="detail-field">
-                <div class="detail-label">Nome</div>
-                <div class="detail-value" id="prof-nome">—</div>
-              </div>
-              <div class="detail-field">
-                <div class="detail-label">Cognome</div>
-                <div class="detail-value" id="prof-cognome">—</div>
-              </div>
-              <div class="detail-field">
-                <div class="detail-label">Email</div>
-                <div class="detail-value" id="prof-email">—</div>
-              </div>
-              <div class="detail-field">
-                <div class="detail-label">Codice Fiscale</div>
-                <div class="detail-value mono" id="prof-cf">—</div>
-              </div>
-              <div class="detail-field">
-                <div class="detail-label">Data di nascita</div>
-                <div class="detail-value" id="prof-nascita">—</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </main>
-  </div>
+  <div class="toast" id="toast"></div>
 
   <script>
-    /* ── Navigazione sezioni ── */
+    // ── Auth ─────────────────────────────────────────────────────────────
+    const token = sessionStorage.getItem('token');
+    const ruolo = sessionStorage.getItem('ruolo');
+    const nome  = sessionStorage.getItem('nome') || '';
+
+    if (!token || ruolo !== 'visitatore') window.location.href = 'Login.html';
+
+    document.getElementById('nome-utente').textContent = nome;
+    document.getElementById('pr-nome').textContent     = nome;
+
+    const authHeaders = () => ({
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    });
+
+    function toast(msg, ok = true) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.style.background = ok ? '#28a745' : '#dc3545';
+      t.style.display = 'block';
+      setTimeout(() => t.style.display = 'none', 3000);
+    }
+
+    function logout() {
+      sessionStorage.clear();
+      window.location.href = 'Login.html';
+    }
+
+    // ── Navigazione ───────────────────────────────────────────────────────
+    const titles = {
+      prenotazioni: 'Le mie prenotazioni',
+      nuova:        'Nuova prenotazione',
+      profilo:      'Il mio profilo'
+    };
+
     function showSection(name) {
-      ['prenotazioni','profilo'].forEach(s => {
-        document.getElementById('section-' + s).classList.toggle('hidden', s !== name);
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById('sec-' + name).classList.add('active');
+      // Attiva nav item corretto
+      document.querySelectorAll('.nav-item').forEach(n => {
+        if (n.getAttribute('onclick')?.includes(name)) n.classList.add('active');
       });
-      if (name === 'profilo') caricaProfilo();
+      document.getElementById('section-title').textContent = titles[name] || name;
+      if (name === 'prenotazioni') caricaPrenotazioni();
     }
 
-    /* ── Badge stato ── */
-    function pillaStato(stato) {
-      const map = {
-        'In_attesa':  '<span class="pill pill-yellow">In attesa</span>',
-        'Confermata': '<span class="pill pill-green">Confermata</span>',
-        'Rifiutata':  '<span class="pill pill-red">Rifiutata</span>',
-      };
-      return map[stato] ?? `<span class="pill pill-neutral">${stato}</span>`;
-    }
+    // ── LE MIE PRENOTAZIONI ───────────────────────────────────────────────
+    async function caricaPrenotazioni() {
+      const container = document.getElementById('cards-prenotazioni');
+      container.innerHTML = '<div class="empty-state"><div class="icon">⏳</div>Caricamento…</div>';
 
-    /* ── Prenotazioni visitatore ── */
-    async function caricaMiePrenotazioni() {
-      /*
-       * BACKEND: GET /api/prenotazioni/mie  (filtra per accountID in sessione)
-       * Chiama model.getPrenotazioniByVisitatore(accountID)
-       */
-      let lista;
       try {
-        const res = await fetch('/api/prenotazioni/mie');
-        lista = await res.json();
-      } catch {
-        lista = [
-          { idPrenotazione:1, data:'2025-06-10', matricolaDetenuto:'D001',
-            tipoAutorizzazione:'Familiare', esitoPrenotazione:'In_attesa',
-            motivoRifiuto: null },
-          { idPrenotazione:2, data:'2025-05-20', matricolaDetenuto:'D001',
-            tipoAutorizzazione:'Avvocato', esitoPrenotazione:'Confermata',
-            motivoRifiuto: null },
-          { idPrenotazione:3, data:'2025-04-15', matricolaDetenuto:'D002',
-            tipoAutorizzazione:'Familiare', esitoPrenotazione:'Rifiutata',
-            motivoRifiuto: 'Detenuto in isolamento' },
-        ];
+        const r = await fetch('/api/prenotazioni', { headers: authHeaders() });
+        const lista = await r.json();
+
+        if (!Array.isArray(lista) || lista.length === 0) {
+          container.innerHTML = '<div class="empty-state"><div class="icon">📭</div>Nessuna prenotazione trovata.</div>';
+          return;
+        }
+
+        container.innerHTML = lista.map(p => `
+          <div class="pren-card">
+            <div class="pren-header">
+              <span class="pren-id">#${p.id}</span>
+              <span class="badge badge-${p.esito}">${p.esito.replace('_', ' ')}</span>
+            </div>
+            <div class="pren-data">📅 ${p.data}</div>
+            <div class="pren-det">🔒 Detenuto: <strong>${p.matricolaDetenuto}</strong></div>
+            <div class="pren-det">📋 Tipo: ${p.tipoAutorizzazione}</div>
+            ${p.motivoRifiuto ? `<div class="pren-det" style="color:#dc3545">Motivo rifiuto: ${p.motivoRifiuto}</div>` : ''}
+            ${p.esito === 'In_attesa' ? `
+              <button class="btn btn-danger btn-sm" style="margin-top:12px;width:100%"
+                onclick="annullaPrenotazione(${p.id})">Annulla prenotazione</button>
+            ` : ''}
+          </div>
+        `).join('');
+
+      } catch (err) {
+        container.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div>Errore di caricamento.</div>';
       }
-
-      // Contatori
-      document.getElementById('cnt-attesa').textContent = lista.filter(p => p.esitoPrenotazione === 'In_attesa').length;
-      document.getElementById('cnt-conf').textContent   = lista.filter(p => p.esitoPrenotazione === 'Confermata').length;
-      document.getElementById('cnt-rif').textContent    = lista.filter(p => p.esitoPrenotazione === 'Rifiutata').length;
-
-      const tbody = document.getElementById('tbody-mie-prenotazioni');
-      if (!lista.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted" style="padding:2rem">Nessuna prenotazione</td></tr>';
-        return;
-      }
-
-      tbody.innerHTML = lista.map(p => `
-        <tr>
-          <td class="mono">#${p.idPrenotazione}</td>
-          <td>${p.data}</td>
-          <td class="mono">${p.matricolaDetenuto}</td>
-          <td>${p.tipoAutorizzazione}</td>
-          <td>${pillaStato(p.esitoPrenotazione)}</td>
-          <td>${p.motivoRifiuto ?? '<span class="text-muted">—</span>'}</td>
-          <td>
-            ${p.esitoPrenotazione === 'In_attesa'
-              ? `<button class="btn btn-danger btn-sm" onclick="annullaPrenotazione(${p.idPrenotazione})">Annulla</button>`
-              : '—'}
-          </td>
-        </tr>
-      `).join('');
     }
 
     async function annullaPrenotazione(id) {
       if (!confirm('Annullare la prenotazione #' + id + '?')) return;
       try {
-        await fetch(`/api/prenotazioni/${id}`, { method: 'DELETE' });
-      } catch {}
-      caricaMiePrenotazioni();
-    }
-
-    /* ── Profilo ── */
-    async function caricaProfilo() {
-      try {
-        const res  = await fetch('/api/me');
-        const data = await res.json();
-        document.getElementById('prof-nome').textContent    = data.nome;
-        document.getElementById('prof-cognome').textContent = data.cognome;
-        document.getElementById('prof-email').textContent   = data.email;
-        document.getElementById('prof-cf').textContent      = data.codiceFiscale;
-        document.getElementById('prof-nascita').textContent = data.dataNascita;
-      } catch {
-        document.getElementById('prof-nome').textContent    = 'Mario';
-        document.getElementById('prof-cognome').textContent = 'Rossi';
-        document.getElementById('prof-email').textContent   = 'mario.rossi@email.it';
-        document.getElementById('prof-cf').textContent      = 'RSSMRA80A01H501U';
-        document.getElementById('prof-nascita').textContent = '01/01/1980';
+        const r = await fetch('/api/prenotazioni/' + id, {
+          method: 'DELETE', headers: authHeaders()
+        });
+        const d = await r.json();
+        if (d.ok) { toast('Prenotazione annullata'); caricaPrenotazioni(); }
+        else toast(d.message || 'Errore', false);
+      } catch (err) {
+        toast('Errore di connessione', false);
       }
     }
 
-    function abilitaModifica() {
-      alert('Form modifica profilo — da implementare.');
+    // ── NUOVA PRENOTAZIONE ────────────────────────────────────────────────
+    async function inviaPrenotazione() {
+      const alertEl  = document.getElementById('n-alert');
+      const alertMsg = document.getElementById('n-alert-msg');
+      alertEl.classList.add('hidden');
+
+      const matricola = document.getElementById('n-matricola').value.trim();
+      const data      = document.getElementById('n-data').value;
+      const tipo      = document.getElementById('n-tipo').value;
+
+      if (!matricola || !data) {
+        alertMsg.textContent = 'Compila matricola e data.';
+        alertEl.classList.remove('hidden');
+        return;
+      }
+
+      try {
+        const r = await fetch('/api/prenotazioni', {
+          method: 'POST',
+          headers: authHeaders(),
+          body: JSON.stringify({ matricolaDetenuto: matricola, data, tipoAutorizzazione: tipo })
+        });
+        const d = await r.json();
+        if (d.ok) {
+          toast('✓ Prenotazione inviata! Attendi l\'approvazione.');
+          document.getElementById('n-matricola').value = '';
+          document.getElementById('n-data').value = '';
+          showSection('prenotazioni');
+        } else {
+          alertMsg.textContent = d.message || 'Errore durante l\'invio.';
+          alertEl.classList.remove('hidden');
+        }
+      } catch (err) {
+        alertMsg.textContent = 'Errore di connessione al server.';
+        alertEl.classList.remove('hidden');
+      }
     }
 
-    /* ── Avvio ── */
-    caricaMiePrenotazioni();
+    // Carica prenotazioni all'avvio
+    caricaPrenotazioni();
   </script>
 
 </body>

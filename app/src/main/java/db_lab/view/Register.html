@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SGC — Registrazione</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/Style.css" />
 </head>
 <body>
 
   <div class="auth-page">
-    <div class="auth-box" style="max-width:500px">
+    <div class="auth-box">
 
       <div class="auth-logo">
         <div class="brand">SGC Sistema</div>
@@ -17,63 +17,41 @@
         <div class="subtitle">Crea il tuo account visitatore</div>
       </div>
 
-      <!-- Alert -->
       <div class="alert alert-error hidden" id="alert-error">
         ⚠ <span id="alert-msg"></span>
       </div>
       <div class="alert alert-success hidden" id="alert-ok">
-        ✓ Registrazione completata. <a href="Login.html">Accedi ora</a>
-      </div>
-
-      <!-- Form -->
-      <div class="form-row">
-        <div class="form-group">
-          <label for="nome">Nome</label>
-          <input type="text" id="nome" placeholder="Mario" />
-        </div>
-        <div class="form-group">
-          <label for="cognome">Cognome</label>
-          <input type="text" id="cognome" placeholder="Rossi" />
-        </div>
+        ✓ <span id="ok-msg">Registrazione completata! Ora puoi accedere.</span>
       </div>
 
       <div class="form-group">
-        <label for="cf">Codice Fiscale</label>
-        <input type="text" id="cf" placeholder="RSSMRA80A01H501U" maxlength="16"
-               style="font-family:var(--font-mono); text-transform:uppercase;" />
+        <label for="nome">Nome</label>
+        <input type="text" id="nome" placeholder="Mario" />
       </div>
-
       <div class="form-group">
-        <label for="dataNascita">Data di nascita</label>
-        <input type="date" id="dataNascita" />
+        <label for="cognome">Cognome</label>
+        <input type="text" id="cognome" placeholder="Rossi" />
       </div>
-
       <div class="form-group">
         <label for="email">Email</label>
-        <input type="email" id="email" placeholder="nome@esempio.it" />
+        <input type="email" id="email" placeholder="mario.rossi@esempio.it" />
       </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label for="password">Password</label>
-          <input type="password" id="password" placeholder="••••••••" />
-        </div>
-        <div class="form-group">
-          <label for="passwordConf">Conferma password</label>
-          <input type="password" id="passwordConf" placeholder="••••••••" />
-        </div>
-      </div>
-
       <div class="form-group">
-        <label for="telefono">Telefono (opzionale)</label>
-        <input type="tel" id="telefono" placeholder="+39 000 0000000" />
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="••••••••" />
+      </div>
+      <div class="form-group">
+        <label for="cf">Codice Fiscale</label>
+        <input type="text" id="cf" placeholder="RSSMRA80A01H501Z" maxlength="16" />
       </div>
 
-      <button class="btn btn-primary btn-full btn-lg mt-2" onclick="handleRegister()">
-        Crea account
+      <button class="btn btn-primary btn-full btn-lg mt-2" id="btn-register">
+        Registrati
       </button>
 
-      <div class="auth-footer mt-2">
+      <div class="auth-divider">oppure</div>
+
+      <div class="auth-footer">
         Hai già un account? <a href="Login.html">Accedi</a>
       </div>
 
@@ -81,68 +59,59 @@
   </div>
 
   <script>
-    /**
-     * BACKEND: POST /api/register
-     * Body JSON: { nome, cognome, codiceFiscale, dataNascita, email, password, telefono }
-     * Chiama model.inserisciVisitatore(v)
-     * Risposta: { ok: true } oppure { ok: false, message: "..." }
-     */
     async function handleRegister() {
-      const nome       = document.getElementById('nome').value.trim();
-      const cognome    = document.getElementById('cognome').value.trim();
-      const cf         = document.getElementById('cf').value.trim().toUpperCase();
-      const dataNascita= document.getElementById('dataNascita').value;
-      const email      = document.getElementById('email').value.trim();
-      const password   = document.getElementById('password').value;
-      const passwordC  = document.getElementById('passwordConf').value;
-      const telefono   = document.getElementById('telefono').value.trim();
+      const alertErr = document.getElementById('alert-error');
+      const alertOk  = document.getElementById('alert-ok');
+      const msgEl    = document.getElementById('alert-msg');
+      const btn      = document.getElementById('btn-register');
 
-      const errEl = document.getElementById('alert-error');
-      const msgEl = document.getElementById('alert-msg');
-      const okEl  = document.getElementById('alert-ok');
+      alertErr.classList.add('hidden');
+      alertOk.classList.add('hidden');
 
-      errEl.classList.add('hidden');
-      okEl.classList.add('hidden');
+      const nome    = document.getElementById('nome').value.trim();
+      const cognome = document.getElementById('cognome').value.trim();
+      const email   = document.getElementById('email').value.trim();
+      const password= document.getElementById('password').value;
+      const cf      = document.getElementById('cf').value.trim();
 
-      // Validazione base
-      if (!nome || !cognome || !cf || !dataNascita || !email || !password) {
-        msgEl.textContent = 'Compila tutti i campi obbligatori.';
-        errEl.classList.remove('hidden');
+      if (!nome || !cognome || !email || !password || !cf) {
+        msgEl.textContent = 'Compila tutti i campi.';
+        alertErr.classList.remove('hidden');
         return;
       }
 
-      if (password !== passwordC) {
-        msgEl.textContent = 'Le password non coincidono.';
-        errEl.classList.remove('hidden');
-        return;
-      }
-
-      if (cf.length !== 16) {
-        msgEl.textContent = 'Il codice fiscale deve essere di 16 caratteri.';
-        errEl.classList.remove('hidden');
-        return;
-      }
+      btn.textContent = 'Registrazione in corso…';
+      btn.disabled = true;
 
       try {
         const res = await fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nome, cognome, codiceFiscale: cf,
-                                 dataNascita, email, password, telefono })
+          body: JSON.stringify({ nome, cognome, email, password, codiceFiscale: cf })
         });
+
         const data = await res.json();
 
         if (data.ok) {
-          okEl.classList.remove('hidden');
+          alertOk.classList.remove('hidden');
+          btn.textContent = '✓ Registrato';
+          setTimeout(() => window.location.href = 'Login.html', 1800);
         } else {
           msgEl.textContent = data.message || 'Errore durante la registrazione.';
-          errEl.classList.remove('hidden');
+          alertErr.classList.remove('hidden');
+          btn.textContent = 'Registrati';
+          btn.disabled = false;
         }
-      } catch {
-        // Demo: mostra solo successo
-        okEl.classList.remove('hidden');
+      } catch (err) {
+        msgEl.textContent = 'Errore di connessione al server.';
+        alertErr.classList.remove('hidden');
+        btn.textContent = 'Registrati';
+        btn.disabled = false;
       }
     }
+
+    document.getElementById('btn-register').addEventListener('click', handleRegister);
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') handleRegister(); });
   </script>
 
 </body>

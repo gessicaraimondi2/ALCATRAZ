@@ -10,7 +10,7 @@ import db_lab.data.*;
 import db_lab.Controller.*;
 
 import java.io.*;
-import java.net.*;
+import java.net.InetSocketAddress;
 import java.nio.file.*;
 import java.sql.SQLException;
 import java.util.*;
@@ -95,9 +95,16 @@ public class App {
         System.out.println("╚══════════════════════════════════════════╝");
         System.out.println("Apri il browser su: http://localhost:" + PORT);
 
-        // Apri automaticamente il browser (funziona su Windows/Mac/Linux)
+        // Apri automaticamente il browser
         try {
-            Desktop.getDesktop().browse(new URI("http://localhost:" + PORT));
+            String os = System.getProperty("os.name").toLowerCase();
+            if (os.contains("win")) {
+                Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler http://localhost:" + PORT);
+            } else if (os.contains("mac")) {
+                Runtime.getRuntime().exec("open http://localhost:" + PORT);
+            } else {
+                Runtime.getRuntime().exec("xdg-open http://localhost:" + PORT);
+            }
         } catch (Exception ignored) {}
 
         // Shutdown hook per chiudere il DB
