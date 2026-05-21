@@ -13,7 +13,8 @@ public class DBModel implements Model {
     private final DAOPrenotazione daoPrenotazione = new DAOPrenotazione();
     private final DAOVisita daoVisita = new DAOVisita();
     private final DAOProvvedimento daoProvvedimento = new DAOProvvedimento();
-    private final DAOCorso daoCorso = new DAOCorso();
+    private final DAOCorso      daoCorso      = new DAOCorso();
+    private final DAOIscrizione daoIscrizione = new DAOIscrizione();
     private final DAOStatistiche daoStatistiche = new DAOStatistiche();
 
     // --------------------------------------------------------------- //
@@ -321,5 +322,27 @@ public class DBModel implements Model {
     @Override
     public void stampaDetenutiPerStato() throws SQLException {
         daoStatistiche.stampaDetenutiPerStato();
+    }
+
+    // ── ISCRIZIONI ────────────────────────────────────────────────────── //
+
+    @Override
+    public boolean inserisciIscrizione(db_lab.data.Iscrizione i) throws SQLException {
+        return daoIscrizione.insert(i);
+    }
+
+    @Override
+    public java.util.List<db_lab.data.Iscrizione> getIscrizioniByCorso(int codiceCorso) throws SQLException {
+        return daoIscrizione.getByCorso(codiceCorso);
+    }
+
+    @Override
+    public java.util.List<db_lab.data.Iscrizione> getIscrizioniByDetenuto(String matricolaDetenuto) throws SQLException {
+        return daoIscrizione.getByDetenuto(matricolaDetenuto);
+    }
+
+    @Override
+    public boolean eliminaIscrizione(String matricolaDetenuto, int codiceCorso) throws SQLException {
+        return daoIscrizione.delete(matricolaDetenuto, codiceCorso);
     }
 }

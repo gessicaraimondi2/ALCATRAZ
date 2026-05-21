@@ -427,4 +427,18 @@ public class MockedModel implements Model {
     public void stampaDetenutiPerStato() {
         System.out.println("Mock: detenuti per stato pena");
     }
+
+    // ── ISCRIZIONI ──────────────────────────────────────────────────── //
+
+    @Override
+    public boolean inserisciIscrizione(db_lab.data.Iscrizione i) { return true; }
+
+    @Override
+    public java.util.List<db_lab.data.Iscrizione> getIscrizioniByCorso(int codiceCorso) { return new java.util.ArrayList<>(); }
+
+    @Override
+    public java.util.List<db_lab.data.Iscrizione> getIscrizioniByDetenuto(String matricolaDetenuto) { return new java.util.ArrayList<>(); }
+
+    @Override
+    public boolean eliminaIscrizione(String matricolaDetenuto, int codiceCorso) { return true; }
 }
