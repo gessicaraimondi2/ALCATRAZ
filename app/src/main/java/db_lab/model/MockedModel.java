@@ -13,6 +13,7 @@ public class MockedModel implements Model {
     private final List<Visita> visite = new ArrayList<>();
     private final List<Prenotazione> prenotazioni = new ArrayList<>();
     private final List<Provvedimento> provvedimenti = new ArrayList<>();
+    private final List<Iscrizione> iscrizioni = new ArrayList<>();
 
     public MockedModel() {
         // Dati finti di esempio
@@ -428,17 +429,43 @@ public class MockedModel implements Model {
         System.out.println("Mock: detenuti per stato pena");
     }
 
-    // ── ISCRIZIONI ──────────────────────────────────────────────────── //
+    // --------------------------------------------------------------- //
+    // ISCRIZIONI AI CORSI                                            //
+    // --------------------------------------------------------------- //
+    @Override
+    public boolean iscriviDetenutoACorso(String matricolaDetenuto, int codiceCorso) {
+        iscrizioni.add(new Iscrizione(matricolaDetenuto, codiceCorso, null));
+        return true;
+    }
 
     @Override
-    public boolean inserisciIscrizione(db_lab.data.Iscrizione i) { return true; }
+    public List<Iscrizione> getIscrizioniByDetenuto(String matricolaDetenuto) {
+        return iscrizioni.stream()
+                .filter(i -> i.getMatricolaDetenuto().equals(matricolaDetenuto))
+                .collect(java.util.stream.Collectors.toList());
+    }
 
     @Override
-    public java.util.List<db_lab.data.Iscrizione> getIscrizioniByCorso(int codiceCorso) { return new java.util.ArrayList<>(); }
+    public List<Iscrizione> getIscrizioniByCorso(int codiceCorso) {
+        return iscrizioni.stream()
+                .filter(i -> i.getCodiceCorso() == codiceCorso)
+                .collect(java.util.stream.Collectors.toList());
+    }
 
     @Override
-    public java.util.List<db_lab.data.Iscrizione> getIscrizioniByDetenuto(String matricolaDetenuto) { return new java.util.ArrayList<>(); }
+    public boolean aggiornaEsitoIscrizione(String matricolaDetenuto, int codiceCorso, Iscrizione.Esito esito) {
+        for (Iscrizione i : iscrizioni) {
+            if (i.getMatricolaDetenuto().equals(matricolaDetenuto) && i.getCodiceCorso() == codiceCorso) {
+                i.setEsito(esito);
+                return true;
+            }
+        }
+        return false;
+    }
 
     @Override
-    public boolean eliminaIscrizione(String matricolaDetenuto, int codiceCorso) { return true; }
+    public boolean eliminaIscrizione(String matricolaDetenuto, int codiceCorso) {
+        return iscrizioni.removeIf(i ->
+            i.getMatricolaDetenuto().equals(matricolaDetenuto) && i.getCodiceCorso() == codiceCorso);
+    }
 }

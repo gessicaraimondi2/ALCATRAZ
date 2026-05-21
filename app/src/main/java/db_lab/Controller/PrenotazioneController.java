@@ -77,8 +77,13 @@ public class PrenotazioneController implements HttpHandler {
 
             // GET /api/prenotazioni
             if (method.equals("GET") && segs.length == 3) {
+                String query = ex.getRequestURI().getQuery();
                 List<Prenotazione> lista;
-                if (LoginController.isAdmin(ex)) {
+                if (query != null && query.startsWith("matricola=")) {
+                    // Admin può vedere prenotazioni di un detenuto specifico
+                    if (!LoginController.isAdmin(ex)) { App.sendError(ex, 403, "Accesso negato"); return; }
+                    lista = model.getPrenotazioniByDetenuto(query.substring(10));
+                } else if (LoginController.isAdmin(ex)) {
                     lista = model.getPrenotazioniInAttesa(); // admin vede tutte in attesa di default
                 } else {
                     lista = model.getPrenotazioniByVisitatore(LoginController.getAccountId(ex));

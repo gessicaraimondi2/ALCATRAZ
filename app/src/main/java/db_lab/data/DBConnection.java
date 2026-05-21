@@ -14,7 +14,7 @@ public class DBConnection {
     // ------------------------------------------------------------------ //
     private static final String DB_URL      = "jdbc:mysql://localhost:3306/alcatraz";
     private static final String DB_USER     = "root";
-    private static final String DB_PASSWORD = "Tina123!";
+    private static final String DB_PASSWORD = "BananaInPigiama!2";
     private static final String DRIVER      = "com.mysql.cj.jdbc.Driver";
 
     // ------------------------------------------------------------------ //

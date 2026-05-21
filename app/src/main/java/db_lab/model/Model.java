@@ -93,9 +93,10 @@ public interface Model {
     // --------------------------------------------------------------- //
     // ISCRIZIONI AI CORSI                                            //
     // --------------------------------------------------------------- //
-    boolean inserisciIscrizione(db_lab.data.Iscrizione i) throws SQLException;
-    List<db_lab.data.Iscrizione> getIscrizioniByCorso(int codiceCorso) throws SQLException;
-    List<db_lab.data.Iscrizione> getIscrizioniByDetenuto(String matricolaDetenuto) throws SQLException;
+    boolean iscriviDetenutoACorso(String matricolaDetenuto, int codiceCorso) throws SQLException;
+    List<Iscrizione> getIscrizioniByDetenuto(String matricolaDetenuto) throws SQLException;
+    List<Iscrizione> getIscrizioniByCorso(int codiceCorso) throws SQLException;
+    boolean aggiornaEsitoIscrizione(String matricolaDetenuto, int codiceCorso, Iscrizione.Esito esito) throws SQLException;
     boolean eliminaIscrizione(String matricolaDetenuto, int codiceCorso) throws SQLException;
 
     // --------------------------------------------------------------- //

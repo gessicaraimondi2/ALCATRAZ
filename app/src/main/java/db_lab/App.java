@@ -55,8 +55,10 @@ public class App {
     // Cartella degli HTML — relativa alla working directory (root del progetto Gradle)
     static final String STATIC_DIR = "app/src/main/java/db_lab/view";
 
+
     public static void main(String[] args) throws Exception {
 
+        System.out.println("[DEBUG] STATIC_DIR assoluto:" + Path.of(STATIC_DIR).toAbsolutePath());
         // ── Connessione DB ──────────────────────────────────────────────
         try {
             DBConnection.getConnection();
@@ -82,10 +84,10 @@ public class App {
         server.createContext("/api/prenotazioni",   new PrenotazioneController(model));
         server.createContext("/api/personale",      new PersonaleController(model));
         server.createContext("/api/corsi",          new CorsoController(model));
-        server.createContext("/api/visite",         new VisitaController(model));
+        server.createContext("/api/iscrizioni",      new IscrizioneController(model));
+        server.createContext("/api/visite",          new VisitaController(model));
         server.createContext("/api/provvedimenti",  new ProvvedimentoController(model));
         server.createContext("/api/statistiche",    new StatisticheController(model));
-        server.createContext("/api/iscrizioni",     new IscrizioneController(model));
 
         server.setExecutor(null); // thread di default
         server.start();

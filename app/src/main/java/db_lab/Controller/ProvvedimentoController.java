@@ -28,12 +28,20 @@ public class ProvvedimentoController implements HttpHandler {
     @Override
     public void handle(HttpExchange ex) throws IOException {
         if (App.handleCors(ex)) return;
-        if (!LoginController.isAdmin(ex)) { App.sendError(ex, 403, "Accesso negato"); return; }
+
+        boolean isAdmin    = LoginController.isAdmin(ex);
+        boolean isLoggedIn = LoginController.getSession(ex) != null;
+        if (!isLoggedIn) { App.sendError(ex, 401, "Non autenticato"); return; }
 
         String path   = ex.getRequestURI().getPath();
         String method = ex.getRequestMethod().toUpperCase();
         String[] segs = path.split("/");
         boolean hasSub = segs.length > 3 && !segs[3].isEmpty();
+
+        // Visitatori: solo GET ?detenuto=X con prenotazione confermata
+        if (!isAdmin && !method.equals("GET")) {
+            App.sendError(ex, 403, "Accesso negato"); return;
+        }
 
         try {
             switch (method) {
@@ -41,8 +49,18 @@ public class ProvvedimentoController implements HttpHandler {
                     String query = ex.getRequestURI().getQuery();
                     List<Provvedimento> lista;
                     if (query != null && query.startsWith("detenuto=")) {
-                        lista = model.getProvvedimentiByDetenuto(query.substring(9));
+                        String matricola = query.substring(9);
+                        if (!isAdmin) {
+                            // Visitatore: verifica prenotazione confermata
+                            int accountId = LoginController.getAccountId(ex);
+                            boolean ok = model.getPrenotazioniByVisitatore(accountId).stream()
+                                .anyMatch(p -> p.getMatricolaDetenuto().equals(matricola) &&
+                                    p.getEsitoPrenotazione() == db_lab.data.Prenotazione.EsitoPrenotazione.Confermata);
+                            if (!ok) { App.sendError(ex, 403, "Nessuna visita confermata per questo detenuto"); return; }
+                        }
+                        lista = model.getProvvedimentiByDetenuto(matricola);
                     } else {
+                        if (!isAdmin) { App.sendError(ex, 403, "Accesso negato"); return; }
                         lista = model.getTuttiProvvedimenti();
                     }
                     App.sendJson(ex, 200, toJsonArray(lista));

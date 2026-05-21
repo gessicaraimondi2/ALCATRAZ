@@ -30,24 +30,51 @@ public class DetenutoController implements HttpHandler {
     @Override
     public void handle(HttpExchange ex) throws IOException {
         if (App.handleCors(ex)) return;
-        if (!LoginController.isAdmin(ex)) { App.sendError(ex, 403, "Accesso negato"); return; }
 
-        String path   = ex.getRequestURI().getPath();          // /api/detenuti  o  /api/detenuti/M001
+        String path   = ex.getRequestURI().getPath();
         String method = ex.getRequestMethod().toUpperCase();
         String[] segments = path.split("/");
-        boolean hasSub = segments.length > 3 && !segments[3].isEmpty(); // es. /api/detenuti/M001
+        boolean hasSub = segments.length > 3 && !segments[3].isEmpty();
+
+        // I visitatori possono fare solo GET su una matricola specifica,
+        // ma solo se hanno una prenotazione confermata per quel detenuto.
+        boolean isAdmin     = LoginController.isAdmin(ex);
+        boolean isLoggedIn  = LoginController.getSession(ex) != null;
+
+        if (!isLoggedIn) { App.sendError(ex, 401, "Non autenticato"); return; }
+        if (!isAdmin && !(method.equals("GET") && hasSub)) {
+            App.sendError(ex, 403, "Accesso negato");
+            return;
+        }
 
         try {
             switch (method) {
 
                 case "GET" -> {
                     if (hasSub) {
-                        // GET /api/detenuti/{matricola}
-                        Detenuto d = model.getDetenutoByMatricola(segments[3]);
+                        String matricola = segments[3];
+
+                        // Visitatore: verifica prenotazione confermata per questo detenuto
+                        if (!isAdmin) {
+                            int accountId = LoginController.getAccountId(ex);
+                            boolean hasPrenConfermata = model
+                                .getPrenotazioniByVisitatore(accountId)
+                                .stream()
+                                .anyMatch(p ->
+                                    p.getMatricolaDetenuto().equals(matricola) &&
+                                    p.getEsitoPrenotazione() == db_lab.data.Prenotazione.EsitoPrenotazione.Confermata);
+                            if (!hasPrenConfermata) {
+                                App.sendError(ex, 403, "Nessuna visita confermata per questo detenuto");
+                                return;
+                            }
+                        }
+
+                        Detenuto d = model.getDetenutoByMatricola(matricola);
                         if (d == null) { App.sendError(ex, 404, "Detenuto non trovato"); return; }
                         App.sendJson(ex, 200, toJson(d));
                     } else {
-                        // GET /api/detenuti  oppure  GET /api/detenuti?sezione=A
+                        // Solo admin può vedere la lista completa
+                        if (!isAdmin) { App.sendError(ex, 403, "Accesso negato"); return; }
                         String query = ex.getRequestURI().getQuery();
                         List<Detenuto> lista;
                         if (query != null && query.startsWith("sezione=")) {

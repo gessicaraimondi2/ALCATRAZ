@@ -211,6 +211,11 @@
     const params = new URLSearchParams(location.search);
     const matricola = params.get('matricola') ?? 'D001';
 
+    function authHeaders() {
+      const token = sessionStorage.getItem('token') || localStorage.getItem('token') || '';
+      return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    }
+
     /* ── Navigazione sezioni ── */
     function showSection(name) {
       ['anagrafica', 'prenotazioni'].forEach(s => {
@@ -233,74 +238,44 @@
 
     /* ── Carica dati detenuto ── */
     async function caricaDetenuto() {
-      /*
-       * BACKEND: GET /api/detenuti/:matricola
-       * Chiama model.getDetenutiByMatricola(matricola)
-       */
-      let d;
       try {
-        const res = await fetch(`/api/detenuti/${matricola}`);
-        d = await res.json();
-      } catch {
-        d = {
-          matricola:      'D001',
-          nome:           'Giuseppe',
-          cognome:        'Verdi',
-          codiceFiscale:  'VRDGPP75B10F205X',
-          dataNascita:    '10/02/1975',
-          nazionalita:    'Italiana',
-          reato:          'Art. 416-bis c.p.',
-          inizioPena:     '12/03/2020',
-          finePena:       '12/03/2030',
-          blocco:         'B',
-          cella:          '14',
-          regime:         'Ordinario',
-          stato:          'Detenuto',
-        };
+        const res = await fetch(`/api/detenuti/${matricola}`, { headers: authHeaders() });
+        if (!res.ok) throw new Error('Non autorizzato o detenuto non trovato');
+        const d = await res.json();
+
+        document.getElementById('info-cella').textContent     = `${d.numeroSezione ?? '—'}-${d.numeroCella ?? '—'}`;
+        document.getElementById('info-stato').textContent     = d.stato?.replace(/_/g,' ') ?? '—';
+        document.getElementById('info-fine-pena').textContent = d.durataPena ?? '—';
+
+        document.getElementById('det-matricola').textContent  = d.matricola;
+        document.getElementById('det-nome').textContent       = d.nome;
+        document.getElementById('det-cognome').textContent    = d.cognome;
+        document.getElementById('det-cf').textContent         = d.codiceFiscale;
+        document.getElementById('det-nascita').textContent    = d.dataNascita;
+        document.getElementById('det-nazionalita').textContent = '—';
+        document.getElementById('det-reato').textContent      = d.reato;
+        document.getElementById('det-inizio-pena').textContent = d.dataIngresso;
+        document.getElementById('det-fine-pena').textContent  = d.durataPena;
+        document.getElementById('det-blocco').textContent     = d.numeroSezione ?? '—';
+        document.getElementById('det-cella').textContent      = d.numeroCella ?? '—';
+        document.getElementById('det-regime').textContent     = d.stato?.replace(/_/g,' ') ?? '—';
+      } catch (err) {
+        document.querySelector('.page-title').textContent = '⚠️ ' + err.message;
       }
-
-      document.getElementById('info-cella').textContent    = `B-${d.cella ?? '—'}`;
-      document.getElementById('info-stato').textContent    = d.stato ?? '—';
-      document.getElementById('info-fine-pena').textContent = d.finePena ?? '—';
-
-      document.getElementById('det-matricola').textContent  = d.matricola;
-      document.getElementById('det-nome').textContent       = d.nome;
-      document.getElementById('det-cognome').textContent    = d.cognome;
-      document.getElementById('det-cf').textContent         = d.codiceFiscale;
-      document.getElementById('det-nascita').textContent    = d.dataNascita;
-      document.getElementById('det-nazionalita').textContent = d.nazionalita;
-      document.getElementById('det-reato').textContent      = d.reato;
-      document.getElementById('det-inizio-pena').textContent = d.inizioPena;
-      document.getElementById('det-fine-pena').textContent  = d.finePena;
-      document.getElementById('det-blocco').textContent     = d.blocco;
-      document.getElementById('det-cella').textContent      = d.cella;
-      document.getElementById('det-regime').textContent     = d.regime;
     }
 
     /* ── Carica prenotazioni del detenuto ── */
     async function caricaPrenotazioniDetenuto() {
-      /*
-       * BACKEND: GET /api/prenotazioni?matricola=:matricola
-       * Chiama model.getPrenotazioniByDetenuto(matricola)
-       */
-      let lista;
+      let lista = [];
       try {
-        const res = await fetch(`/api/prenotazioni?matricola=${matricola}`);
+        const res = await fetch(`/api/prenotazioni?matricola=${matricola}`, { headers: authHeaders() });
         lista = await res.json();
-      } catch {
-        lista = [
-          { idPrenotazione: 1, data: '2025-06-10', visitatore: 'Mario Rossi',
-            tipoAutorizzazione: 'Familiare', esitoPrenotazione: 'In_attesa', motivoRifiuto: null },
-          { idPrenotazione: 2, data: '2025-05-01', visitatore: 'Anna Bianchi',
-            tipoAutorizzazione: 'Avvocato', esitoPrenotazione: 'Confermata', motivoRifiuto: null },
-          { idPrenotazione: 3, data: '2025-03-20', visitatore: 'Luigi Neri',
-            tipoAutorizzazione: 'Familiare', esitoPrenotazione: 'Rifiutata', motivoRifiuto: 'Regime restrittivo attivo' },
-        ];
-      }
+        if (!Array.isArray(lista)) lista = [];
+      } catch { lista = []; }
 
-      document.getElementById('cnt-attesa').textContent = lista.filter(p => p.esitoPrenotazione === 'In_attesa').length;
-      document.getElementById('cnt-conf').textContent   = lista.filter(p => p.esitoPrenotazione === 'Confermata').length;
-      document.getElementById('cnt-rif').textContent    = lista.filter(p => p.esitoPrenotazione === 'Rifiutata').length;
+      document.getElementById('cnt-attesa').textContent = lista.filter(p => p.esito === 'In_attesa').length;
+      document.getElementById('cnt-conf').textContent   = lista.filter(p => p.esito === 'Confermata').length;
+      document.getElementById('cnt-rif').textContent    = lista.filter(p => p.esito === 'Rifiutata').length;
 
       const tbody = document.getElementById('tbody-prenotazioni-det');
       if (!lista.length) {
@@ -310,16 +285,16 @@
 
       tbody.innerHTML = lista.map(p => `
         <tr>
-          <td class="mono">#${p.idPrenotazione}</td>
+          <td class="mono">#${p.id}</td>
           <td>${p.data}</td>
-          <td>${p.visitatore}</td>
+          <td>—</td>
           <td>${p.tipoAutorizzazione}</td>
-          <td>${pillaStato(p.esitoPrenotazione)}</td>
+          <td>${pillaStato(p.esito)}</td>
           <td>${p.motivoRifiuto ?? '<span class="text-muted">—</span>'}</td>
           <td>
-            ${p.esitoPrenotazione === 'In_attesa' ? `
-              <button class="btn btn-primary btn-sm" onclick="gestisciPrenotazione(${p.idPrenotazione}, 'Confermata')">Approva</button>
-              <button class="btn btn-danger btn-sm" onclick="gestisciPrenotazione(${p.idPrenotazione}, 'Rifiutata')">Rifiuta</button>
+            ${p.esito === 'In_attesa' ? `
+              <button class="btn btn-primary btn-sm" onclick="gestisciPrenotazione(${p.id}, 'Confermata')">Approva</button>
+              <button class="btn btn-danger btn-sm" onclick="gestisciPrenotazione(${p.id}, 'Rifiutata')">Rifiuta</button>
             ` : '—'}
           </td>
         </tr>
@@ -330,10 +305,10 @@
       const motivo = esito === 'Rifiutata' ? prompt('Motivo del rifiuto:') : null;
       if (esito === 'Rifiutata' && !motivo) return;
       try {
-        await fetch(`/api/prenotazioni/${id}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ esitoPrenotazione: esito, motivoRifiuto: motivo }),
+        await fetch(`/api/prenotazioni/${id}/esito`, {
+          method: 'PUT',
+          headers: authHeaders(),
+          body: JSON.stringify({ esito, ...(motivo ? { motivo } : {}) }),
         });
       } catch {}
       caricaPrenotazioniDetenuto();
