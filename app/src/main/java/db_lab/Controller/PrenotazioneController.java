@@ -84,7 +84,7 @@ public class PrenotazioneController implements HttpHandler {
                     if (!LoginController.isAdmin(ex)) { App.sendError(ex, 403, "Accesso negato"); return; }
                     lista = model.getPrenotazioniByDetenuto(query.substring(10));
                 } else if (LoginController.isAdmin(ex)) {
-                    lista = model.getPrenotazioniInAttesa(); // admin vede tutte in attesa di default
+                    lista = model.getTuttePrenotazioni();
                 } else {
                     lista = model.getPrenotazioniByVisitatore(LoginController.getAccountId(ex));
                 }

@@ -262,6 +262,11 @@ public class MockedModel implements Model {
     }
 
     @Override
+    public List<Prenotazione> getTuttePrenotazioni() {
+        return new ArrayList<>(prenotazioni);
+    }
+
+    @Override
     public boolean aggiornaEsitoPrenotazione(int idPrenotazione, Prenotazione.EsitoPrenotazione esito, String motivo) {
         Prenotazione p = getPrenotazione(idPrenotazione);
         if (p == null) return false;

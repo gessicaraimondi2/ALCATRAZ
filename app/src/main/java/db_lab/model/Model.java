@@ -56,6 +56,7 @@ public interface Model {
     List<Prenotazione> getPrenotazioniByVisitatore(int accountID) throws SQLException;
     List<Prenotazione> getPrenotazioniByDetenuto(String matricolaDetenuto) throws SQLException;
     List<Prenotazione> getPrenotazioniInAttesa() throws SQLException;
+    List<Prenotazione> getTuttePrenotazioni() throws SQLException;
     boolean aggiornaEsitoPrenotazione(int idPrenotazione, Prenotazione.EsitoPrenotazione esito, String motivo) throws SQLException;
     boolean eliminaPrenotazione(int idPrenotazione) throws SQLException;
 

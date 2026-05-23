@@ -6,6 +6,7 @@ import db_lab.App;
 import db_lab.model.Model;
 
 import java.io.IOException;
+import java.util.Locale;
 
 /**
  * GET /api/statistiche
@@ -34,9 +35,9 @@ public class StatisticheController implements HttpHandler {
             int    attesa = model.getNumeroPrenotazioniInAttesa();
 
             App.sendJson(ex, 200,
-                "{\"tassoPartecipazione\":"    + String.format("%.1f", tasso)  +
-                ",\"mediaDetenutiPerSezione\":" + String.format("%.1f", media)  +
-                ",\"prenotazioniInAttesa\":"    + attesa                        +
+                "{\"tassoPartecipazione\":"    + String.format(Locale.US, "%.1f", tasso)  +
+                ",\"mediaDetenutiPerSezione\":" + String.format(Locale.US, "%.1f", media)  +
+                ",\"prenotazioniInAttesa\":"    + attesa                                   +
                 "}");
         } catch (Exception e) {
             App.sendError(ex, 500, e.getMessage());

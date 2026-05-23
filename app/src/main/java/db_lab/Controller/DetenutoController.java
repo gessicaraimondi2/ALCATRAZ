@@ -88,7 +88,8 @@ public class DetenutoController implements HttpHandler {
 
                 case "POST" -> {
                     Map<String, String> b = App.parseJson(App.readBody(ex));
-                    Detenuto d = fromMap(b);
+                    int adminId = LoginController.getAccountId(ex);
+                    Detenuto d = fromMap(b, adminId);
                     boolean ok = model.inserisciDetenuto(d);
                     if (ok) App.sendOk(ex, "");
                     else    App.sendError(ex, 500, "Errore inserimento");
@@ -150,7 +151,7 @@ public class DetenutoController implements HttpHandler {
         return sb.toString();
     }
 
-    private Detenuto fromMap(Map<String, String> b) {
+    private Detenuto fromMap(Map<String, String> b, int adminId) {
         return new Detenuto(
             b.getOrDefault("matricola", ""),
             b.getOrDefault("nome", ""),
@@ -161,9 +162,9 @@ public class DetenutoController implements HttpHandler {
             b.getOrDefault("durataPena", ""),
             b.getOrDefault("reato", ""),
             Detenuto.StatoDellaPena.valueOf(b.getOrDefault("statoDellaPena", "In_corso")),
-            0,
-            b.getOrDefault("numeroSezione", ""),
-            b.getOrDefault("numeroCella", "")
+            adminId,
+            b.getOrDefault("numeroSezione", null),
+            b.getOrDefault("numeroCella", null)
         );
     }
 }

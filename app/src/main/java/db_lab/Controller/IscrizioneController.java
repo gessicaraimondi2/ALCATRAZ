@@ -117,7 +117,7 @@ public class IscrizioneController implements HttpHandler {
             "\"matricolaDetenuto\":\"" + App.escJson(i.getMatricolaDetenuto()) + "\"," +
             "\"codiceCorso\":"         + i.getCodiceCorso()                    + "," +
             "\"esito\":"               + (i.getEsito() == null ? "null" :
-                                          "\"" + i.getEsito().toDBString() + "\"") +
+                                          "\"" + i.getEsito().name() + "\"") +
             "}";
     }
 

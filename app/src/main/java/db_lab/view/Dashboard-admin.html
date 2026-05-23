@@ -108,6 +108,10 @@
         <div class="stat-card"><div class="stat-val" id="stat-media">—</div><div class="stat-lbl">Media detenuti per sezione</div></div>
         <div class="stat-card"><div class="stat-val" id="stat-attesa">—</div><div class="stat-lbl">Prenotazioni in attesa</div></div>
       </div>
+      <div style="margin-top:1rem;display:flex;align-items:center;gap:1rem">
+        <button class="btn btn-outline btn-sm" onclick="caricaStatistiche()">🔄 Ricarica statistiche</button>
+        <span id="stat-error" style="color:#dc3545;font-size:.85rem;display:none"></span>
+      </div>
     </div>
 
     <!-- DETENUTI -->
@@ -190,23 +194,39 @@
 
       <!-- Iscrizioni detenuti ai corsi -->
       <div style="margin-top:2rem">
-        <div class="card-title" style="margin-bottom:.8rem;font-size:1rem">📋 Iscrivere un detenuto a un corso</div>
-        <div class="form-inline">
-          <input id="i-matricola" placeholder="Matricola detenuto *" />
-          <input id="i-corso"     type="number" placeholder="ID corso *" min="1" />
-          <button class="btn btn-primary" onclick="iscriviDetenuto()">Iscrivi</button>
+        <div class="card-title" style="margin-bottom:1rem;font-size:1rem;border-bottom:1px solid rgba(255,255,255,.08);padding-bottom:.6rem">📋 Iscrizioni ai corsi</div>
+
+        <!-- Ricerca + inserimento unificati -->
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.8rem;align-items:flex-end">
+          <div style="flex:1;min-width:180px">
+            <label style="font-size:.75rem;opacity:.6;display:block;margin-bottom:3px">Matricola detenuto</label>
+            <input id="i-matricola" placeholder="es. DET001" style="width:100%" oninput="document.getElementById('i-filtro-matricola').value=this.value" />
+          </div>
+          <div style="flex:1;min-width:140px">
+            <label style="font-size:.75rem;opacity:.6;display:block;margin-bottom:3px">ID corso</label>
+            <input id="i-corso" type="number" placeholder="es. 3" min="1" style="width:100%" />
+          </div>
+          <button class="btn btn-primary" onclick="iscriviDetenuto()" style="white-space:nowrap">+ Iscrivi</button>
+          <button class="btn btn-outline btn-sm" onclick="caricaIscrizioniDetenuto()" style="white-space:nowrap">🔍 Cerca iscrizioni</button>
         </div>
-        <div class="table-wrap" style="margin-top:1rem">
+
+        <!-- Ricerca per corso -->
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:flex-end">
+          <div style="flex:1;min-width:180px">
+            <label style="font-size:.75rem;opacity:.6;display:block;margin-bottom:3px">Oppure cerca tutti gli iscritti al corso ID</label>
+            <input id="i-filtro-corso" type="number" placeholder="ID corso" min="1" style="width:100%" />
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="caricaIscrizioniCorso()" style="white-space:nowrap">🔍 Cerca per corso</button>
+        </div>
+
+
+        <div class="table-wrap">
           <table>
             <thead><tr><th>Detenuto</th><th>ID Corso</th><th>Esito</th><th>Azioni</th></tr></thead>
-            <tbody id="tbody-iscrizioni"><tr><td colspan="4" class="text-center text-muted" style="padding:1rem">Inserisci una matricola o un ID corso per vedere le iscrizioni</td></tr></tbody>
+            <tbody id="tbody-iscrizioni">
+              <tr><td colspan="4" class="text-center text-muted" style="padding:1.2rem">Inserisci una matricola e clicca 🔍 per vedere le iscrizioni</td></tr>
+            </tbody>
           </table>
-        </div>
-        <div style="display:flex;gap:.5rem;margin-top:.6rem;flex-wrap:wrap">
-          <input id="i-filtro-matricola" placeholder="Cerca per matricola" style="flex:1;min-width:160px" />
-          <button class="btn btn-outline btn-sm" onclick="caricaIscrizioniDetenuto()">🔍 Iscrizioni detenuto</button>
-          <input id="i-filtro-corso" type="number" placeholder="Cerca per ID corso" style="flex:1;min-width:160px" />
-          <button class="btn btn-outline btn-sm" onclick="caricaIscrizioniCorso()">🔍 Iscritti al corso</button>
         </div>
       </div>
     </div>
@@ -301,11 +321,28 @@
 
     // ── STATISTICHE ───────────────────────────────────────────────────────
     async function caricaStatistiche() {
-      const r = await fetch('/api/statistiche', { headers: headers() });
-      const d = await r.json();
-      document.getElementById('stat-tasso').textContent  = d.tassoPartecipazione + '%';
-      document.getElementById('stat-media').textContent  = d.mediaDetenutiPerSezione;
-      document.getElementById('stat-attesa').textContent = d.prenotazioniInAttesa;
+      const errEl = document.getElementById('stat-error');
+      errEl.style.display = 'none';
+      ['stat-tasso','stat-media','stat-attesa'].forEach(id =>
+        document.getElementById(id).textContent = '…'
+      );
+      try {
+        const r = await fetch('/api/statistiche', { headers: headers() });
+        if (!r.ok) {
+          const e = await r.json().catch(() => ({ message: 'Errore ' + r.status }));
+          throw new Error(e.message || 'Errore ' + r.status);
+        }
+        const d = await r.json();
+        document.getElementById('stat-tasso').textContent  = (d.tassoPartecipazione  ?? '—') + '%';
+        document.getElementById('stat-media').textContent  = d.mediaDetenutiPerSezione ?? '—';
+        document.getElementById('stat-attesa').textContent = d.prenotazioniInAttesa   ?? '—';
+      } catch (e) {
+        ['stat-tasso','stat-media','stat-attesa'].forEach(id =>
+          document.getElementById(id).textContent = '—'
+        );
+        errEl.textContent = '⚠ ' + e.message;
+        errEl.style.display = 'inline';
+      }
     }
 
     // ── DETENUTI ──────────────────────────────────────────────────────────
@@ -352,22 +389,30 @@
     // ── PRENOTAZIONI ──────────────────────────────────────────────────────
     async function caricaPrenotazioni(filtro = 'attesa') {
       const url = filtro === 'attesa' ? '/api/prenotazioni/attesa' : '/api/prenotazioni';
-      const r = await fetch(url, { headers: headers() });
-      const lista = await r.json();
-      const tb = document.getElementById('tbody-prenotazioni');
-      tb.innerHTML = lista.map(p => `<tr>
-        <td>${p.id}</td><td>${p.matricolaDetenuto}</td><td>${p.data}</td>
-        <td>${p.tipoAutorizzazione}</td>
-        <td><span class="badge badge-${p.esito}">${p.esito.replace('_',' ')}</span></td>
-        <td style="display:flex;gap:6px;flex-wrap:wrap">
-          ${p.esito === 'In_attesa' ? `
-            <button class="btn btn-success btn-sm" onclick="setEsitoPrenotazione(${p.id},'Confermata')">✓</button>
-            <button class="btn btn-danger btn-sm"  onclick="setEsitoPrenotazione(${p.id},'Rifiutata')">✗</button>
-          ` : ''}
-          <a href="Detenuto-dettaglio.html?matricola=${p.matricolaDetenuto}" class="btn btn-outline btn-sm">👤</a>
-          <button class="btn btn-danger btn-sm" onclick="eliminaPrenotazione(${p.id})">🗑</button>
-        </td>
-      </tr>`).join('');
+      try {
+        const r = await fetch(url, { headers: headers() });
+        if (!r.ok) { toast('Errore caricamento prenotazioni', false); return; }
+        const lista = await r.json();
+        if (!Array.isArray(lista)) { toast('Risposta non valida dal server', false); return; }
+        const tb = document.getElementById('tbody-prenotazioni');
+        if (!lista.length) {
+          tb.innerHTML = '<tr><td colspan="6" class="text-center text-muted" style="padding:1.2rem">Nessuna prenotazione trovata</td></tr>';
+        } else {
+          tb.innerHTML = lista.map(p => `<tr>
+            <td>${p.id}</td><td>${p.matricolaDetenuto}</td><td>${p.data}</td>
+            <td>${p.tipoAutorizzazione}</td>
+            <td><span class="badge badge-${p.esito}">${p.esito.replace('_',' ')}</span></td>
+            <td style="display:flex;gap:6px;flex-wrap:wrap">
+              ${p.esito === 'In_attesa' ? `
+                <button class="btn btn-success btn-sm" onclick="setEsitoPrenotazione(${p.id},'Confermata')">✓</button>
+                <button class="btn btn-danger btn-sm"  onclick="setEsitoPrenotazione(${p.id},'Rifiutata')">✗</button>
+              ` : ''}
+              <a href="Detenuto-dettaglio.html?matricola=${p.matricolaDetenuto}" class="btn btn-outline btn-sm">👤</a>
+              <button class="btn btn-danger btn-sm" onclick="eliminaPrenotazione(${p.id})">🗑</button>
+            </td>
+          </tr>`).join('');
+        }
+      } catch { toast('Errore di connessione', false); }
     }
 
     async function setEsitoPrenotazione(id, esito) {
@@ -456,79 +501,93 @@
 
     // ── ISCRIZIONI ────────────────────────────────────────────────────────
     async function iscriviDetenuto() {
-      const matricola  = document.getElementById('i-matricola').value.trim();
+      const matricola   = document.getElementById('i-matricola').value.trim();
       const codiceCorso = parseInt(document.getElementById('i-corso').value);
       if (!matricola || !codiceCorso) { toast('Matricola e ID corso obbligatori', false); return; }
-      const r = await fetch('/api/iscrizioni', {
-        method: 'POST', headers: headers(),
-        body: JSON.stringify({ matricolaDetenuto: matricola, codiceCorso })
-      });
-      const d = await r.json();
-      if (d.ok) {
-        toast('Detenuto iscritto al corso');
-        document.getElementById('i-filtro-matricola').value = matricola;
-        caricaIscrizioniDetenuto();
-      } else toast(d.message, false);
+      try {
+        const r = await fetch('/api/iscrizioni', {
+          method: 'POST', headers: headers(),
+          body: JSON.stringify({ matricolaDetenuto: matricola, codiceCorso })
+        });
+        const d = await r.json();
+        if (d.ok) { toast('✓ Detenuto iscritto al corso #' + codiceCorso); await caricaIscrizioniDetenuto(); }
+        else toast(d.message || 'Errore: detenuto/corso inesistente o già iscritto', false);
+      } catch { toast('Errore di connessione', false); }
     }
 
+    // Mappa enum Java → label e colore
+    const ESITO_LABEL = { 'In_corso':'In corso', 'Superato':'Superato', 'Non_superato':'Non superato', 'Sospeso':'Sospeso' };
+    const ESITO_COLOR = { 'In_corso':'#0d6efd', 'Superato':'#28a745', 'Non_superato':'#dc3545', 'Sospeso':'#fd7e14' };
+
     function renderIscrizioni(lista) {
-      const esiti = ['In_corso','Superato','Non_superato','Sospeso'];
       const tb = document.getElementById('tbody-iscrizioni');
-      if (!lista.length) {
-        tb.innerHTML = '<tr><td colspan="4" class="text-center text-muted" style="padding:1rem">Nessuna iscrizione trovata</td></tr>';
+      if (!Array.isArray(lista) || !lista.length) {
+        tb.innerHTML = '<tr><td colspan="4" class="text-center text-muted" style="padding:1.2rem">Nessuna iscrizione trovata</td></tr>';
         return;
       }
-      tb.innerHTML = lista.map(i => `<tr>
-        <td class="mono">${i.matricolaDetenuto}</td>
-        <td>${i.codiceCorso}</td>
-        <td>
-          <select onchange="aggiornaEsitoIscrizione('${i.matricolaDetenuto}',${i.codiceCorso},this.value)">
-            ${esiti.map(e => `<option value="${e}" ${(i.esito ?? 'In_corso') === e ? 'selected':''}>
-              ${e.replace('_',' ')}</option>`).join('')}
-          </select>
-        </td>
-        <td><button class="btn btn-danger btn-sm" onclick="eliminaIscrizione('${i.matricolaDetenuto}',${i.codiceCorso})">Rimuovi</button></td>
-      </tr>`).join('');
+      const esiti = Object.keys(ESITO_LABEL);
+      tb.innerHTML = lista.map(i => {
+        const cur = i.esito ?? 'In_corso';
+        const col = ESITO_COLOR[cur] ?? '#6c757d';
+        return `<tr>
+          <td class="mono">${i.matricolaDetenuto}</td>
+          <td>${i.codiceCorso}</td>
+          <td><select style="border-left:3px solid ${col};padding-left:6px"
+                      onchange="aggiornaEsitoIscrizione('${i.matricolaDetenuto}',${i.codiceCorso},this.value)">
+            ${esiti.map(e => `<option value="${e}" ${cur===e?'selected':''}>${ESITO_LABEL[e]}</option>`).join('')}
+          </select></td>
+          <td><button class="btn btn-danger btn-sm" onclick="eliminaIscrizione('${i.matricolaDetenuto}',${i.codiceCorso})">Rimuovi</button></td>
+        </tr>`;
+      }).join('');
     }
 
     async function caricaIscrizioniDetenuto() {
-      const matr = document.getElementById('i-filtro-matricola').value.trim();
+      const matr = document.getElementById('i-matricola').value.trim();
       if (!matr) { toast('Inserisci una matricola', false); return; }
-      const r = await fetch('/api/iscrizioni?detenuto=' + matr, { headers: headers() });
-      renderIscrizioni(await r.json());
+      try {
+        const r = await fetch('/api/iscrizioni?detenuto=' + matr, { headers: headers() });
+        if (!r.ok) { toast('Errore nel caricamento iscrizioni', false); return; }
+        renderIscrizioni(await r.json());
+      } catch { toast('Errore di connessione', false); }
     }
 
     async function caricaIscrizioniCorso() {
       const id = document.getElementById('i-filtro-corso').value;
       if (!id) { toast('Inserisci un ID corso', false); return; }
-      const r = await fetch('/api/iscrizioni?corso=' + id, { headers: headers() });
-      renderIscrizioni(await r.json());
+      try {
+        const r = await fetch('/api/iscrizioni?corso=' + id, { headers: headers() });
+        if (!r.ok) { toast('Errore nel caricamento iscrizioni', false); return; }
+        renderIscrizioni(await r.json());
+      } catch { toast('Errore di connessione', false); }
     }
 
     async function aggiornaEsitoIscrizione(matricola, codiceCorso, esito) {
-      const r = await fetch(`/api/iscrizioni/${matricola}/${codiceCorso}`, {
-        method: 'PUT', headers: headers(),
-        body: JSON.stringify({ esito })
-      });
-      const d = await r.json();
-      if (d.ok) toast('Esito aggiornato');
-      else toast(d.message, false);
+      try {
+        const r = await fetch(`/api/iscrizioni/${matricola}/${codiceCorso}`, {
+          method: 'PUT', headers: headers(),
+          body: JSON.stringify({ esito })
+        });
+        const d = await r.json();
+        if (d.ok) toast('✓ Esito aggiornato');
+        else toast(d.message || 'Errore aggiornamento', false);
+      } catch { toast('Errore di connessione', false); }
     }
 
     async function eliminaIscrizione(matricola, codiceCorso) {
       if (!confirm(`Rimuovere iscrizione di ${matricola} dal corso #${codiceCorso}?`)) return;
-      const r = await fetch(`/api/iscrizioni/${matricola}/${codiceCorso}`, {
-        method: 'DELETE', headers: headers()
-      });
-      const d = await r.json();
-      if (d.ok) {
-        toast('Iscrizione rimossa');
-        // Ricarica la vista corrente
-        const matr = document.getElementById('i-filtro-matricola').value.trim();
-        const cid  = document.getElementById('i-filtro-corso').value;
-        if (matr) caricaIscrizioniDetenuto();
-        else if (cid) caricaIscrizioniCorso();
-      } else toast(d.message, false);
+      try {
+        const r = await fetch(`/api/iscrizioni/${matricola}/${codiceCorso}`, {
+          method: 'DELETE', headers: headers()
+        });
+        const d = await r.json();
+        if (d.ok) {
+          toast('Iscrizione rimossa');
+          const matr = document.getElementById('i-matricola').value.trim();
+          const cid  = document.getElementById('i-filtro-corso').value;
+          if (matr) caricaIscrizioniDetenuto();
+          else if (cid) caricaIscrizioniCorso();
+        } else toast(d.message || 'Errore eliminazione', false);
+      } catch { toast('Errore di connessione', false); }
     }
 
     // ── VISITE ────────────────────────────────────────────────────────────

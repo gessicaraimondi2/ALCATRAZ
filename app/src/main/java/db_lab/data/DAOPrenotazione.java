@@ -70,6 +70,17 @@ public class DAOPrenotazione {
         return list;
     }
 
+    public List<Prenotazione> getAll() throws SQLException {
+        List<Prenotazione> list = new ArrayList<>();
+        String sql = "SELECT * FROM PRENOTAZIONE ORDER BY Data DESC";
+        try (Connection con = DBConnection.getConnection();
+             Statement st = con.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+            while (rs.next()) list.add(map(rs));
+        }
+        return list;
+    }
+
     /** Aggiorna l'esito (conferma o rifiuta) e imposta eventuale motivo rifiuto */
     public boolean aggiornaEsito(int idPrenotazione, Prenotazione.EsitoPrenotazione esito,
                                   String motivoRifiuto) throws SQLException {

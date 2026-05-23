@@ -188,6 +188,11 @@ public class DBModel implements Model {
     }
 
     @Override
+    public List<Prenotazione> getTuttePrenotazioni() throws SQLException {
+        return daoPrenotazione.getAll();
+    }
+
+    @Override
     public boolean aggiornaEsitoPrenotazione(int idPrenotazione, Prenotazione.EsitoPrenotazione esito, String motivo) throws SQLException {
         return daoPrenotazione.aggiornaEsito(idPrenotazione, esito, motivo);
     }
