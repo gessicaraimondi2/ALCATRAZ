@@ -1,78 +1,76 @@
 package db_lab.data;
 
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class DAOProvvedimento {
 
-    public boolean insert(Provvedimento p) throws SQLException {
-        String sql = "INSERT INTO PROVVEDIMENTO_DISCIPLINARE (Tipo, Motivazione, DataEmissione, " +
-                     "MatricolaDetenuto, Matricola) VALUES (?, ?, ?, ?, ?)";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, p.getTipo().name());
-            ps.setString(2, p.getMotivazione());
-            ps.setDate(3, Date.valueOf(p.getDataEmissione()));
-            ps.setString(4, p.getMatricolaDetenuto());
-            ps.setString(5, p.getMatricola());
+    private final Connection connection;
+
+    public DAOProvvedimento(Connection connection) {
+        this.connection = connection;
+    }
+
+    public boolean insert(Provvedimento p) {
+        try (var ps = DAOUtils.prepare(connection, Queries.PROVVEDIMENTO_INSERT,
+                p.getTipo().name(), p.getMotivazione(),
+                Date.valueOf(p.getDataEmissione()),
+                p.getMatricolaDetenuto(), p.getMatricola())) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore insert provvedimento", e);
         }
     }
 
-    public Provvedimento getByID(int numeroProv) throws SQLException {
-        String sql = "SELECT * FROM PROVVEDIMENTO_DISCIPLINARE WHERE NumeroProv = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, numeroProv);
-            ResultSet rs = ps.executeQuery();
+    public Provvedimento getByID(int numeroProv) {
+        try (var ps = DAOUtils.prepare(connection, Queries.PROVVEDIMENTO_GET_BY_ID, numeroProv);
+             var rs = ps.executeQuery()) {
             if (rs.next()) return map(rs);
+        } catch (SQLException e) {
+            throw new DAOException("Errore getByID provvedimento", e);
         }
         return null;
     }
 
-    public List<Provvedimento> getByDetenuto(String matricolaDetenuto) throws SQLException {
-        List<Provvedimento> list = new ArrayList<>();
-        String sql = "SELECT * FROM PROVVEDIMENTO_DISCIPLINARE WHERE MatricolaDetenuto = ? ORDER BY DataEmissione DESC";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, matricolaDetenuto);
-            ResultSet rs = ps.executeQuery();
+    public List<Provvedimento> getByDetenuto(String matricolaDetenuto) {
+        var list = new ArrayList<Provvedimento>();
+        try (var ps = DAOUtils.prepare(connection, Queries.PROVVEDIMENTO_GET_BY_DETENUTO, matricolaDetenuto);
+             var rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) {
+            throw new DAOException("Errore getByDetenuto provvedimento", e);
         }
         return list;
     }
 
-    public List<Provvedimento> getByTipo(Provvedimento.Tipo tipo) throws SQLException {
-        List<Provvedimento> list = new ArrayList<>();
-        String sql = "SELECT * FROM PROVVEDIMENTO_DISCIPLINARE WHERE Tipo = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, tipo.name());
-            ResultSet rs = ps.executeQuery();
+    public List<Provvedimento> getByTipo(Provvedimento.Tipo tipo) {
+        var list = new ArrayList<Provvedimento>();
+        try (var ps = DAOUtils.prepare(connection, Queries.PROVVEDIMENTO_GET_BY_TIPO, tipo.name());
+             var rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) {
+            throw new DAOException("Errore getByTipo provvedimento", e);
         }
         return list;
     }
 
-    public List<Provvedimento> getAll() throws SQLException {
-        List<Provvedimento> list = new ArrayList<>();
-        String sql = "SELECT * FROM PROVVEDIMENTO_DISCIPLINARE ORDER BY DataEmissione DESC";
-        try (Connection con = DBConnection.getConnection();
-             Statement st = con.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
+    public List<Provvedimento> getAll() {
+        var list = new ArrayList<Provvedimento>();
+        try (var ps = DAOUtils.prepare(connection, Queries.PROVVEDIMENTO_GET_ALL);
+             var rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) {
+            throw new DAOException("Errore getAll provvedimenti", e);
         }
         return list;
     }
 
-    public boolean delete(int numeroProv) throws SQLException {
-        String sql = "DELETE FROM PROVVEDIMENTO_DISCIPLINARE WHERE NumeroProv = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, numeroProv);
+    public boolean delete(int numeroProv) {
+        try (var ps = DAOUtils.prepare(connection, Queries.PROVVEDIMENTO_DELETE, numeroProv)) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore delete provvedimento", e);
         }
     }
 

@@ -1,84 +1,87 @@
 package db_lab.data;
 
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * DAO per AMMINISTRATORE — riscritto seguendo il pattern della prof.
+ *
+ * Differenze rispetto alla versione originale:
+ *   1. Riceve la Connection nel costruttore — non riapre la connessione ad ogni query
+ *   2. Usa DAOUtils.prepare() — niente try/prepareStatement/setString ripetuto
+ *   3. Usa Queries.* — le SQL non sono inline nel codice
+ *   4. Lancia DAOException (unchecked) — niente "throws SQLException" nella firma
+ */
 public class DAOAmministratore {
 
-    public boolean insert(Amministratore a) throws SQLException {
-        String sql = "INSERT INTO AMMINISTRATORE (E_Mail, Password, DataCreazione, Nome, Cognome, Matricola) " +
-                     "VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, a.getEmail());
-            ps.setString(2, a.getPassword());
-            ps.setDate(3, Date.valueOf(a.getDataCreazione()));
-            ps.setString(4, a.getNome());
-            ps.setString(5, a.getCognome());
-            ps.setString(6, a.getMatricola());
+    private final Connection connection;
+
+    public DAOAmministratore(Connection connection) {
+        this.connection = connection;
+    }
+
+    // ------------------------------------------------------------------ //
+
+    public boolean insert(Amministratore a) {
+        try (var ps = DAOUtils.prepare(connection, Queries.AMMINISTRATORE_INSERT,
+                a.getEmail(), a.getPassword(), a.getNome(), a.getCognome(), a.getMatricola())) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore insert amministratore", e);
         }
     }
 
-    public Amministratore getByID(int accountID) throws SQLException {
-        String sql = "SELECT * FROM AMMINISTRATORE WHERE AccountID = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, accountID);
-            ResultSet rs = ps.executeQuery();
+    public Amministratore getByID(int accountID) {
+        try (var ps = DAOUtils.prepare(connection, Queries.AMMINISTRATORE_GET_BY_ID, accountID);
+             var rs = ps.executeQuery()) {
             if (rs.next()) return map(rs);
+        } catch (SQLException e) {
+            throw new DAOException("Errore getByID amministratore", e);
         }
         return null;
     }
 
-    public List<Amministratore> getAll() throws SQLException {
-        List<Amministratore> list = new ArrayList<>();
-        String sql = "SELECT * FROM AMMINISTRATORE";
-        try (Connection con = DBConnection.getConnection();
-             Statement st = con.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
+    public List<Amministratore> getAll() {
+        var list = new ArrayList<Amministratore>();
+        try (var ps = DAOUtils.prepare(connection, Queries.AMMINISTRATORE_GET_ALL);
+             var rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) {
+            throw new DAOException("Errore getAll amministratori", e);
         }
         return list;
     }
 
-    public Amministratore login(String email, String password) throws SQLException {
-        String sql = "SELECT * FROM AMMINISTRATORE WHERE E_Mail = ? AND Password = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, email);
-            ps.setString(2, password);
-            ResultSet rs = ps.executeQuery();
+    public Amministratore login(String email, String password) {
+        try (var ps = DAOUtils.prepare(connection, Queries.AMMINISTRATORE_LOGIN, email, password);
+             var rs = ps.executeQuery()) {
             if (rs.next()) return map(rs);
+        } catch (SQLException e) {
+            throw new DAOException("Errore login amministratore", e);
         }
         return null;
     }
 
-    public boolean update(Amministratore a) throws SQLException {
-        String sql = "UPDATE AMMINISTRATORE SET E_Mail=?, Password=?, Nome=?, Cognome=?, Matricola=? " +
-                     "WHERE AccountID=?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, a.getEmail());
-            ps.setString(2, a.getPassword());
-            ps.setString(3, a.getNome());
-            ps.setString(4, a.getCognome());
-            ps.setString(5, a.getMatricola());
-            ps.setInt(6, a.getAccountID());
+    public boolean update(Amministratore a) {
+        try (var ps = DAOUtils.prepare(connection, Queries.AMMINISTRATORE_UPDATE,
+                a.getEmail(), a.getPassword(), a.getNome(), a.getCognome(),
+                a.getMatricola(), a.getAccountID())) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore update amministratore", e);
         }
     }
 
-    public boolean delete(int accountID) throws SQLException {
-        String sql = "DELETE FROM AMMINISTRATORE WHERE AccountID = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, accountID);
+    public boolean delete(int accountID) {
+        try (var ps = DAOUtils.prepare(connection, Queries.AMMINISTRATORE_DELETE, accountID)) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore delete amministratore", e);
         }
     }
+
+    // ------------------------------------------------------------------ //
 
     private Amministratore map(ResultSet rs) throws SQLException {
         return new Amministratore(

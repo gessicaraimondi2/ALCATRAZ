@@ -1,105 +1,97 @@
 package db_lab.data;
 
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class DAOPrenotazione {
 
-    public boolean insert(Prenotazione p) throws SQLException {
-        String sql = "INSERT INTO PRENOTAZIONE (NumeroAutorizzazione, TipoAutorizzazione, Data, " +
-                     "Eff_AccountID, MatricolaDetenuto, MotivoRifiuto, EsitoPrenotazione) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?)";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, p.getNumeroAutorizzazione());
-            ps.setString(2, p.getTipoAutorizzazione());
-            ps.setDate(3, Date.valueOf(p.getData()));
-            ps.setInt(4, p.getEffAccountID());
-            ps.setString(5, p.getMatricolaDetenuto());
-            ps.setString(6, p.getMotivoRifiuto());   // può essere null
-            ps.setString(7, p.getEsitoPrenotazione().toDBString());
+    private final Connection connection;
+
+    public DAOPrenotazione(Connection connection) {
+        this.connection = connection;
+    }
+
+    public boolean insert(Prenotazione p) {
+        try (var ps = DAOUtils.prepare(connection, Queries.PRENOTAZIONE_INSERT,
+                p.getNumeroAutorizzazione(), p.getTipoAutorizzazione(),
+                Date.valueOf(p.getData()), p.getEffAccountID(),
+                p.getMatricolaDetenuto(), p.getMotivoRifiuto(),
+                p.getEsitoPrenotazione().toDBString())) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore insert prenotazione", e);
         }
     }
 
-    public Prenotazione getByID(int idPrenotazione) throws SQLException {
-        String sql = "SELECT * FROM PRENOTAZIONE WHERE IDPrenotazione = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, idPrenotazione);
-            ResultSet rs = ps.executeQuery();
+    public Prenotazione getByID(int idPrenotazione) {
+        try (var ps = DAOUtils.prepare(connection, Queries.PRENOTAZIONE_GET_BY_ID, idPrenotazione);
+             var rs = ps.executeQuery()) {
             if (rs.next()) return map(rs);
+        } catch (SQLException e) {
+            throw new DAOException("Errore getByID prenotazione", e);
         }
         return null;
     }
 
-    public List<Prenotazione> getByVisitatore(int accountID) throws SQLException {
-        List<Prenotazione> list = new ArrayList<>();
-        String sql = "SELECT * FROM PRENOTAZIONE WHERE Eff_AccountID = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, accountID);
-            ResultSet rs = ps.executeQuery();
+    public List<Prenotazione> getByVisitatore(int accountID) {
+        var list = new ArrayList<Prenotazione>();
+        try (var ps = DAOUtils.prepare(connection, Queries.PRENOTAZIONE_GET_BY_VISITATORE, accountID);
+             var rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) {
+            throw new DAOException("Errore getByVisitatore prenotazione", e);
         }
         return list;
     }
 
-    public List<Prenotazione> getByDetenuto(String matricolaDetenuto) throws SQLException {
-        List<Prenotazione> list = new ArrayList<>();
-        String sql = "SELECT * FROM PRENOTAZIONE WHERE MatricolaDetenuto = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, matricolaDetenuto);
-            ResultSet rs = ps.executeQuery();
+    public List<Prenotazione> getByDetenuto(String matricolaDetenuto) {
+        var list = new ArrayList<Prenotazione>();
+        try (var ps = DAOUtils.prepare(connection, Queries.PRENOTAZIONE_GET_BY_DETENUTO, matricolaDetenuto);
+             var rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) {
+            throw new DAOException("Errore getByDetenuto prenotazione", e);
         }
         return list;
     }
 
-    public List<Prenotazione> getInAttesa() throws SQLException {
-        List<Prenotazione> list = new ArrayList<>();
-        String sql = "SELECT * FROM PRENOTAZIONE WHERE EsitoPrenotazione = 'In attesa'";
-        try (Connection con = DBConnection.getConnection();
-             Statement st = con.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
+    public List<Prenotazione> getInAttesa() {
+        var list = new ArrayList<Prenotazione>();
+        try (var ps = DAOUtils.prepare(connection, Queries.PRENOTAZIONE_GET_IN_ATTESA);
+             var rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) {
+            throw new DAOException("Errore getInAttesa prenotazione", e);
         }
         return list;
     }
 
-    public List<Prenotazione> getAll() throws SQLException {
-        List<Prenotazione> list = new ArrayList<>();
-        String sql = "SELECT * FROM PRENOTAZIONE ORDER BY Data DESC";
-        try (Connection con = DBConnection.getConnection();
-             Statement st = con.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
+    public List<Prenotazione> getAll() {
+        var list = new ArrayList<Prenotazione>();
+        try (var ps = DAOUtils.prepare(connection, Queries.PRENOTAZIONE_GET_ALL);
+             var rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) {
+            throw new DAOException("Errore getAll prenotazioni", e);
         }
         return list;
     }
 
-    /** Aggiorna l'esito (conferma o rifiuta) e imposta eventuale motivo rifiuto */
-    public boolean aggiornaEsito(int idPrenotazione, Prenotazione.EsitoPrenotazione esito,
-                                  String motivoRifiuto) throws SQLException {
-        String sql = "UPDATE PRENOTAZIONE SET EsitoPrenotazione=?, MotivoRifiuto=? WHERE IDPrenotazione=?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, esito.toDBString());
-            ps.setString(2, motivoRifiuto);
-            ps.setInt(3, idPrenotazione);
+    public boolean aggiornaEsito(int idPrenotazione, Prenotazione.EsitoPrenotazione esito, String motivoRifiuto) {
+        try (var ps = DAOUtils.prepare(connection, Queries.PRENOTAZIONE_UPDATE_ESITO,
+                esito.toDBString(), motivoRifiuto, idPrenotazione)) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore aggiornaEsito prenotazione", e);
         }
     }
 
-    public boolean delete(int idPrenotazione) throws SQLException {
-        String sql = "DELETE FROM PRENOTAZIONE WHERE IDPrenotazione = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, idPrenotazione);
+    public boolean delete(int idPrenotazione) {
+        try (var ps = DAOUtils.prepare(connection, Queries.PRENOTAZIONE_DELETE, idPrenotazione)) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore delete prenotazione", e);
         }
     }
 

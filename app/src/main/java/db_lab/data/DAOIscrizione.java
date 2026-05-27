@@ -6,66 +6,59 @@ import java.util.List;
 
 public class DAOIscrizione {
 
-    /**
-     * Op9 – Iscrivere un detenuto a un corso
-     * INSERT INTO Iscrizione (MatricolaDetenuto, CodiceCorso, Esito) VALUES (?, ?, NULL);
-     */
-    public boolean insert(String matricolaDetenuto, int codiceCorso) throws SQLException {
-        String sql = "INSERT INTO Iscrizione (MatricolaDetenuto, CodiceCorso, Esito) VALUES (?, ?, NULL)";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, matricolaDetenuto);
-            ps.setInt(2, codiceCorso);
+    private final Connection connection;
+
+    public DAOIscrizione(Connection connection) {
+        this.connection = connection;
+    }
+
+    public boolean insert(String matricolaDetenuto, int codiceCorso) {
+        try (var ps = DAOUtils.prepare(connection, Queries.ISCRIZIONE_INSERT,
+                matricolaDetenuto, codiceCorso)) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore insert iscrizione", e);
         }
     }
 
-    /** Tutte le iscrizioni di un detenuto (con titolo corso). */
-    public List<Iscrizione> getByDetenuto(String matricolaDetenuto) throws SQLException {
-        List<Iscrizione> list = new ArrayList<>();
-        String sql = "SELECT MatricolaDetenuto, CodiceCorso, Esito FROM Iscrizione WHERE MatricolaDetenuto = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, matricolaDetenuto);
-            ResultSet rs = ps.executeQuery();
+    public List<Iscrizione> getByDetenuto(String matricolaDetenuto) {
+        var list = new ArrayList<Iscrizione>();
+        try (var ps = DAOUtils.prepare(connection, Queries.ISCRIZIONE_GET_BY_DETENUTO, matricolaDetenuto);
+             var rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) {
+            throw new DAOException("Errore getByDetenuto iscrizione", e);
         }
         return list;
     }
 
-    /** Tutti i detenuti iscritti a un corso. */
-    public List<Iscrizione> getByCorso(int codiceCorso) throws SQLException {
-        List<Iscrizione> list = new ArrayList<>();
-        String sql = "SELECT MatricolaDetenuto, CodiceCorso, Esito FROM Iscrizione WHERE CodiceCorso = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, codiceCorso);
-            ResultSet rs = ps.executeQuery();
+    public List<Iscrizione> getByCorso(int codiceCorso) {
+        var list = new ArrayList<Iscrizione>();
+        try (var ps = DAOUtils.prepare(connection, Queries.ISCRIZIONE_GET_BY_CORSO, codiceCorso);
+             var rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) {
+            throw new DAOException("Errore getByCorso iscrizione", e);
         }
         return list;
     }
 
-    /** Aggiorna l'esito di un'iscrizione. */
-    public boolean updateEsito(String matricolaDetenuto, int codiceCorso, Iscrizione.Esito esito) throws SQLException {
-        String sql = "UPDATE Iscrizione SET Esito = ? WHERE MatricolaDetenuto = ? AND CodiceCorso = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, esito == null ? null : esito.toDBString());
-            ps.setString(2, matricolaDetenuto);
-            ps.setInt(3, codiceCorso);
+    public boolean updateEsito(String matricolaDetenuto, int codiceCorso, Iscrizione.Esito esito) {
+        try (var ps = DAOUtils.prepare(connection, Queries.ISCRIZIONE_UPDATE_ESITO,
+                esito == null ? null : esito.toDBString(),
+                matricolaDetenuto, codiceCorso)) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore updateEsito iscrizione", e);
         }
     }
 
-    /** Elimina un'iscrizione. */
-    public boolean delete(String matricolaDetenuto, int codiceCorso) throws SQLException {
-        String sql = "DELETE FROM Iscrizione WHERE MatricolaDetenuto = ? AND CodiceCorso = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, matricolaDetenuto);
-            ps.setInt(2, codiceCorso);
+    public boolean delete(String matricolaDetenuto, int codiceCorso) {
+        try (var ps = DAOUtils.prepare(connection, Queries.ISCRIZIONE_DELETE,
+                matricolaDetenuto, codiceCorso)) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore delete iscrizione", e);
         }
     }
 
@@ -78,7 +71,7 @@ public class DAOIscrizione {
                 case "Non superato" -> Iscrizione.Esito.Non_superato;
                 case "In corso"     -> Iscrizione.Esito.In_corso;
                 case "Sospeso"      -> Iscrizione.Esito.Sospeso;
-                default -> throw new SQLException("Valore Esito sconosciuto: " + esitoStr);
+                default -> throw new SQLException("Esito iscrizione sconosciuto: " + esitoStr);
             };
         }
         return new Iscrizione(rs.getString("MatricolaDetenuto"), rs.getInt("CodiceCorso"), esito);

@@ -3,8 +3,10 @@ package db_lab.Controller;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import db_lab.App;
+import db_lab.data.DAODetenuto;
+import db_lab.data.DAOPrenotazione;
 import db_lab.data.Detenuto;
-import db_lab.model.Model;
+import db_lab.data.Prenotazione;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -12,39 +14,38 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * GET    /api/detenuti              → lista tutti
- * GET    /api/detenuti?sezione=A    → filtra per sezione
- * GET    /api/detenuti/{matricola}  → singolo
- * POST   /api/detenuti              → inserisci
- * PUT    /api/detenuti/{matricola}  → aggiorna
- * DELETE /api/detenuti/{matricola}  → elimina
+ * GET    /api/detenuti              → lista tutti (admin)
+ * GET    /api/detenuti?sezione=A    → filtra per sezione (admin)
+ * GET    /api/detenuti/{matricola}  → singolo (admin o visitatore con prenotazione confermata)
+ * POST   /api/detenuti              → inserisci (admin)
+ * PUT    /api/detenuti/{matricola}  → aggiorna (admin)
+ * DELETE /api/detenuti/{matricola}  → elimina (admin)
  */
 public class DetenutoController implements HttpHandler {
 
-    private final Model model;
+    private final DAODetenuto     daoDetenuto;
+    private final DAOPrenotazione daoPrenotazione;
 
-    public DetenutoController(Model model) {
-        this.model = model;
+    public DetenutoController(DAODetenuto daoDetenuto, DAOPrenotazione daoPrenotazione) {
+        this.daoDetenuto     = daoDetenuto;
+        this.daoPrenotazione = daoPrenotazione;
     }
 
     @Override
     public void handle(HttpExchange ex) throws IOException {
         if (App.handleCors(ex)) return;
 
-        String path   = ex.getRequestURI().getPath();
-        String method = ex.getRequestMethod().toUpperCase();
-        String[] segments = path.split("/");
-        boolean hasSub = segments.length > 3 && !segments[3].isEmpty();
+        String   path    = ex.getRequestURI().getPath();
+        String   method  = ex.getRequestMethod().toUpperCase();
+        String[] segs    = path.split("/");
+        boolean  hasSub  = segs.length > 3 && !segs[3].isEmpty();
 
-        // I visitatori possono fare solo GET su una matricola specifica,
-        // ma solo se hanno una prenotazione confermata per quel detenuto.
-        boolean isAdmin     = LoginController.isAdmin(ex);
-        boolean isLoggedIn  = LoginController.getSession(ex) != null;
+        boolean isAdmin    = LoginController.isAdmin(ex);
+        boolean isLoggedIn = LoginController.getSession(ex) != null;
 
         if (!isLoggedIn) { App.sendError(ex, 401, "Non autenticato"); return; }
         if (!isAdmin && !(method.equals("GET") && hasSub)) {
-            App.sendError(ex, 403, "Accesso negato");
-            return;
+            App.sendError(ex, 403, "Accesso negato"); return;
         }
 
         try {
@@ -52,66 +53,54 @@ public class DetenutoController implements HttpHandler {
 
                 case "GET" -> {
                     if (hasSub) {
-                        String matricola = segments[3];
-
-                        // Visitatore: verifica prenotazione confermata per questo detenuto
+                        String matricola = segs[3];
                         if (!isAdmin) {
                             int accountId = LoginController.getAccountId(ex);
-                            boolean hasPrenConfermata = model
-                                .getPrenotazioniByVisitatore(accountId)
-                                .stream()
-                                .anyMatch(p ->
-                                    p.getMatricolaDetenuto().equals(matricola) &&
-                                    p.getEsitoPrenotazione() == db_lab.data.Prenotazione.EsitoPrenotazione.Confermata);
-                            if (!hasPrenConfermata) {
+                            boolean hasPren = daoPrenotazione.getByVisitatore(accountId).stream()
+                                .anyMatch(p -> p.getMatricolaDetenuto().equals(matricola) &&
+                                    p.getEsitoPrenotazione() == Prenotazione.EsitoPrenotazione.Confermata);
+                            if (!hasPren) {
                                 App.sendError(ex, 403, "Nessuna visita confermata per questo detenuto");
                                 return;
                             }
                         }
-
-                        Detenuto d = model.getDetenutoByMatricola(matricola);
+                        Detenuto d = daoDetenuto.getByMatricola(matricola);
                         if (d == null) { App.sendError(ex, 404, "Detenuto non trovato"); return; }
                         App.sendJson(ex, 200, toJson(d));
                     } else {
-                        // Solo admin può vedere la lista completa
                         if (!isAdmin) { App.sendError(ex, 403, "Accesso negato"); return; }
                         String query = ex.getRequestURI().getQuery();
-                        List<Detenuto> lista;
-                        if (query != null && query.startsWith("sezione=")) {
-                            lista = model.getDetenutiBySezione(query.substring(8));
-                        } else {
-                            lista = model.getDetenuti();
-                        }
+                        List<Detenuto> lista = (query != null && query.startsWith("sezione="))
+                            ? daoDetenuto.getBySezione(query.substring(8))
+                            : daoDetenuto.getAll();
                         App.sendJson(ex, 200, toJsonArray(lista));
                     }
                 }
 
                 case "POST" -> {
                     Map<String, String> b = App.parseJson(App.readBody(ex));
-                    int adminId = LoginController.getAccountId(ex);
-                    Detenuto d = fromMap(b, adminId);
-                    boolean ok = model.inserisciDetenuto(d);
+                    boolean ok = daoDetenuto.insert(fromMap(b, LoginController.getAccountId(ex)));
                     if (ok) App.sendOk(ex, "");
                     else    App.sendError(ex, 500, "Errore inserimento");
                 }
 
                 case "PUT" -> {
                     if (!hasSub) { App.sendError(ex, 400, "Matricola mancante"); return; }
-                    Detenuto d = model.getDetenutoByMatricola(segments[3]);
+                    Detenuto d = daoDetenuto.getByMatricola(segs[3]);
                     if (d == null) { App.sendError(ex, 404, "Detenuto non trovato"); return; }
                     Map<String, String> b = App.parseJson(App.readBody(ex));
                     if (b.containsKey("reato"))          d.setReato(b.get("reato"));
                     if (b.containsKey("numeroSezione"))  d.setNumeroSezione(b.get("numeroSezione"));
                     if (b.containsKey("numeroCella"))    d.setNumeroCella(b.get("numeroCella"));
                     if (b.containsKey("statoDellaPena")) d.setStatoDellaPena(Detenuto.StatoDellaPena.valueOf(b.get("statoDellaPena")));
-                    boolean ok = model.aggiornaDetenuto(d);
+                    boolean ok = daoDetenuto.update(d);
                     if (ok) App.sendOk(ex, "");
                     else    App.sendError(ex, 500, "Errore aggiornamento");
                 }
 
                 case "DELETE" -> {
                     if (!hasSub) { App.sendError(ex, 400, "Matricola mancante"); return; }
-                    boolean ok = model.eliminaDetenuto(segments[3]);
+                    boolean ok = daoDetenuto.delete(segs[3]);
                     if (ok) App.sendOk(ex, "");
                     else    App.sendError(ex, 404, "Detenuto non trovato");
                 }
@@ -123,21 +112,19 @@ public class DetenutoController implements HttpHandler {
         }
     }
 
-    // ── Serializzazione ───────────────────────────────────────────────
-
     static String toJson(Detenuto d) {
         return "{" +
-            "\"matricola\":\""      + App.escJson(d.getMatricolaDetenuto()) + "\"," +
-            "\"nome\":\""           + App.escJson(d.getNome())              + "\"," +
-            "\"cognome\":\""        + App.escJson(d.getCognome())           + "\"," +
-            "\"dataNascita\":\""    + d.getDataDiNascita()                  + "\"," +
-            "\"codiceFiscale\":\""  + App.escJson(d.getCodiceFiscale())     + "\"," +
-            "\"dataIngresso\":\""   + d.getDataIngresso()                   + "\"," +
-            "\"durataPena\":\""     + App.escJson(d.getDurataPena())        + "\"," +
-            "\"reato\":\""          + App.escJson(d.getReato())             + "\"," +
-            "\"stato\":\""          + d.getStatoDellaPena()                 + "\"," +
-            "\"numeroSezione\":\""  + App.escJson(d.getNumeroSezione())     + "\"," +
-            "\"numeroCella\":\""    + App.escJson(d.getNumeroCella())       + "\"" +
+            "\"matricola\":\""     + App.escJson(d.getMatricolaDetenuto()) + "\"," +
+            "\"nome\":\""          + App.escJson(d.getNome())              + "\"," +
+            "\"cognome\":\""       + App.escJson(d.getCognome())           + "\"," +
+            "\"dataNascita\":\""   + d.getDataDiNascita()                  + "\"," +
+            "\"codiceFiscale\":\"" + App.escJson(d.getCodiceFiscale())     + "\"," +
+            "\"dataIngresso\":\""  + d.getDataIngresso()                   + "\"," +
+            "\"durataPena\":\""    + App.escJson(d.getDurataPena())        + "\"," +
+            "\"reato\":\""         + App.escJson(d.getReato())             + "\"," +
+            "\"stato\":\""         + d.getStatoDellaPena()                 + "\"," +
+            "\"numeroSezione\":\"" + App.escJson(d.getNumeroSezione())     + "\"," +
+            "\"numeroCella\":\""   + App.escJson(d.getNumeroCella())       + "\"" +
             "}";
     }
 
@@ -147,24 +134,23 @@ public class DetenutoController implements HttpHandler {
             if (i > 0) sb.append(",");
             sb.append(toJson(lista.get(i)));
         }
-        sb.append("]");
-        return sb.toString();
+        return sb.append("]").toString();
     }
 
     private Detenuto fromMap(Map<String, String> b, int adminId) {
         return new Detenuto(
-            b.getOrDefault("matricola", ""),
-            b.getOrDefault("nome", ""),
-            b.getOrDefault("cognome", ""),
-            LocalDate.parse(b.getOrDefault("dataNascita", LocalDate.now().toString())),
+            b.getOrDefault("matricola",    ""),
+            b.getOrDefault("nome",         ""),
+            b.getOrDefault("cognome",      ""),
+            LocalDate.parse(b.getOrDefault("dataNascita",   LocalDate.now().toString())),
             b.getOrDefault("codiceFiscale", ""),
-            LocalDate.parse(b.getOrDefault("dataIngresso", LocalDate.now().toString())),
-            b.getOrDefault("durataPena", ""),
-            b.getOrDefault("reato", ""),
+            LocalDate.parse(b.getOrDefault("dataIngresso",  LocalDate.now().toString())),
+            b.getOrDefault("durataPena",   ""),
+            b.getOrDefault("reato",        ""),
             Detenuto.StatoDellaPena.valueOf(b.getOrDefault("statoDellaPena", "In_corso")),
             adminId,
             b.getOrDefault("numeroSezione", null),
-            b.getOrDefault("numeroCella", null)
+            b.getOrDefault("numeroCella",   null)
         );
     }
 }

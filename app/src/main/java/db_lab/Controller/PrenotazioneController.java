@@ -3,8 +3,8 @@ package db_lab.Controller;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import db_lab.App;
+import db_lab.data.DAOPrenotazione;
 import db_lab.data.Prenotazione;
-import db_lab.model.Model;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * GET    /api/prenotazioni               → tutte (admin) o del visitatore (visitatore)
+ * GET    /api/prenotazioni               → tutte (admin) o del visitatore
  * GET    /api/prenotazioni/attesa        → solo In_attesa (admin)
  * POST   /api/prenotazioni               → nuova prenotazione (visitatore)
  * PUT    /api/prenotazioni/{id}/esito    → approva/rifiuta (admin)
@@ -20,30 +20,29 @@ import java.util.Map;
  */
 public class PrenotazioneController implements HttpHandler {
 
-    private final Model model;
+    private final DAOPrenotazione daoPrenotazione;
 
-    public PrenotazioneController(Model model) {
-        this.model = model;
+    public PrenotazioneController(DAOPrenotazione daoPrenotazione) {
+        this.daoPrenotazione = daoPrenotazione;
     }
 
     @Override
     public void handle(HttpExchange ex) throws IOException {
         if (App.handleCors(ex)) return;
 
-        String path    = ex.getRequestURI().getPath(); // /api/prenotazioni[/attesa|/{id}|/{id}/esito]
-        String method  = ex.getRequestMethod().toUpperCase();
-        String[] segs  = path.split("/");              // ["","api","prenotazioni",...]
-
-        // Controlla autenticazione
         if (LoginController.getSession(ex) == null) {
             App.sendError(ex, 401, "Non autenticato"); return;
         }
+
+        String   path   = ex.getRequestURI().getPath();
+        String   method = ex.getRequestMethod().toUpperCase();
+        String[] segs   = path.split("/");
 
         try {
             // GET /api/prenotazioni/attesa
             if (method.equals("GET") && segs.length == 4 && segs[3].equals("attesa")) {
                 if (!LoginController.isAdmin(ex)) { App.sendError(ex, 403, "Accesso negato"); return; }
-                App.sendJson(ex, 200, toJsonArray(model.getPrenotazioniInAttesa()));
+                App.sendJson(ex, 200, toJsonArray(daoPrenotazione.getInAttesa()));
                 return;
             }
 
@@ -53,8 +52,7 @@ public class PrenotazioneController implements HttpHandler {
                 int id = Integer.parseInt(segs[3]);
                 Map<String, String> b = App.parseJson(App.readBody(ex));
                 Prenotazione.EsitoPrenotazione esito = Prenotazione.EsitoPrenotazione.valueOf(b.get("esito"));
-                String motivo = b.getOrDefault("motivo", null);
-                boolean ok = model.aggiornaEsitoPrenotazione(id, esito, motivo);
+                boolean ok = daoPrenotazione.aggiornaEsito(id, esito, b.getOrDefault("motivo", null));
                 if (ok) App.sendOk(ex, "");
                 else    App.sendError(ex, 404, "Prenotazione non trovata");
                 return;
@@ -63,13 +61,12 @@ public class PrenotazioneController implements HttpHandler {
             // DELETE /api/prenotazioni/{id}
             if (method.equals("DELETE") && segs.length == 4) {
                 int id = Integer.parseInt(segs[3]);
-                Prenotazione p = model.getPrenotazione(id);
+                Prenotazione p = daoPrenotazione.getByID(id);
                 if (p == null) { App.sendError(ex, 404, "Prenotazione non trovata"); return; }
-                // Il visitatore può eliminare solo le sue
                 if (!LoginController.isAdmin(ex) && p.getEffAccountID() != LoginController.getAccountId(ex)) {
                     App.sendError(ex, 403, "Accesso negato"); return;
                 }
-                boolean ok = model.eliminaPrenotazione(id);
+                boolean ok = daoPrenotazione.delete(id);
                 if (ok) App.sendOk(ex, "");
                 else    App.sendError(ex, 500, "Errore eliminazione");
                 return;
@@ -80,13 +77,12 @@ public class PrenotazioneController implements HttpHandler {
                 String query = ex.getRequestURI().getQuery();
                 List<Prenotazione> lista;
                 if (query != null && query.startsWith("matricola=")) {
-                    // Admin può vedere prenotazioni di un detenuto specifico
                     if (!LoginController.isAdmin(ex)) { App.sendError(ex, 403, "Accesso negato"); return; }
-                    lista = model.getPrenotazioniByDetenuto(query.substring(10));
+                    lista = daoPrenotazione.getByDetenuto(query.substring(10));
                 } else if (LoginController.isAdmin(ex)) {
-                    lista = model.getTuttePrenotazioni();
+                    lista = daoPrenotazione.getAll();
                 } else {
-                    lista = model.getPrenotazioniByVisitatore(LoginController.getAccountId(ex));
+                    lista = daoPrenotazione.getByVisitatore(LoginController.getAccountId(ex));
                 }
                 App.sendJson(ex, 200, toJsonArray(lista));
                 return;
@@ -95,18 +91,16 @@ public class PrenotazioneController implements HttpHandler {
             // POST /api/prenotazioni
             if (method.equals("POST") && segs.length == 3) {
                 Map<String, String> b = App.parseJson(App.readBody(ex));
-                int accountId = LoginController.getAccountId(ex);
                 Prenotazione p = new Prenotazione(
-                    0,
-                    0,
+                    0, 0,
                     b.getOrDefault("tipoAutorizzazione", "Altro"),
                     LocalDate.parse(b.getOrDefault("data", LocalDate.now().toString())),
-                    accountId,
+                    LoginController.getAccountId(ex),
                     b.getOrDefault("matricolaDetenuto", ""),
                     null,
                     Prenotazione.EsitoPrenotazione.In_attesa
                 );
-                boolean ok = model.inserisciPrenotazione(p);
+                boolean ok = daoPrenotazione.insert(p);
                 if (ok) App.sendOk(ex, "");
                 else    App.sendError(ex, 500, "Errore inserimento");
                 return;
@@ -121,13 +115,13 @@ public class PrenotazioneController implements HttpHandler {
 
     static String toJson(Prenotazione p) {
         return "{" +
-            "\"id\":"                  + p.getIdPrenotazione()                       + "," +
-            "\"tipoAutorizzazione\":\"" + App.escJson(p.getTipoAutorizzazione())      + "\"," +
-            "\"data\":\""              + p.getData()                                 + "\"," +
-            "\"matricolaDetenuto\":\"" + App.escJson(p.getMatricolaDetenuto())       + "\"," +
-            "\"esito\":\""             + p.getEsitoPrenotazione()                    + "\"," +
-            "\"motivoRifiuto\":"       + (p.getMotivoRifiuto() == null ? "null" :
-                                         "\"" + App.escJson(p.getMotivoRifiuto()) + "\"") +
+            "\"id\":"                   + p.getIdPrenotazione()                + "," +
+            "\"tipoAutorizzazione\":\"" + App.escJson(p.getTipoAutorizzazione()) + "\"," +
+            "\"data\":\""               + p.getData()                          + "\"," +
+            "\"matricolaDetenuto\":\"" + App.escJson(p.getMatricolaDetenuto()) + "\"," +
+            "\"esito\":\""              + p.getEsitoPrenotazione()             + "\"," +
+            "\"motivoRifiuto\":"        + (p.getMotivoRifiuto() == null ? "null" :
+                                          "\"" + App.escJson(p.getMotivoRifiuto()) + "\"") +
             "}";
     }
 

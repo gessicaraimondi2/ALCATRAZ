@@ -1,120 +1,85 @@
 package db_lab.data;
 
-
 import java.sql.*;
-import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
 public class DAOVisitatore {
 
-    // ------------------------------------------------------------------ //
-    // INSERT                                                               //
-    // ------------------------------------------------------------------ //
+    private final Connection connection;
 
-    public boolean insert(Visitatore v) throws SQLException {
-        String sql = "INSERT INTO VISITATORE (E_Mail, Password, DataCreazione, Nome, Cognome, CodiceFiscale) " +
-                     "VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, v.getEmail());
-            ps.setString(2, v.getPassword());
-            ps.setDate(3, Date.valueOf(v.getDataCreazione()));
-            ps.setString(4, v.getNome());
-            ps.setString(5, v.getCognome());
-            ps.setString(6, v.getCodiceFiscale());
+    public DAOVisitatore(Connection connection) {
+        this.connection = connection;
+    }
+
+    public boolean insert(Visitatore v) {
+        try (var ps = DAOUtils.prepare(connection, Queries.VISITATORE_INSERT,
+                v.getEmail(), v.getPassword(), Date.valueOf(v.getDataCreazione()),
+                v.getNome(), v.getCognome(), v.getCodiceFiscale())) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore insert visitatore", e);
         }
     }
 
-    // ------------------------------------------------------------------ //
-    // SELECT                                                               //
-    // ------------------------------------------------------------------ //
-
-    public Visitatore getByID(int accountID) throws SQLException {
-        String sql = "SELECT * FROM VISITATORE WHERE AccountID = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, accountID);
-            ResultSet rs = ps.executeQuery();
+    public Visitatore getByID(int accountID) {
+        try (var ps = DAOUtils.prepare(connection, Queries.VISITATORE_GET_BY_ID, accountID);
+             var rs = ps.executeQuery()) {
             if (rs.next()) return map(rs);
+        } catch (SQLException e) {
+            throw new DAOException("Errore getByID visitatore", e);
         }
         return null;
     }
 
-    public Visitatore getByEmail(String email) throws SQLException {
-        String sql = "SELECT * FROM VISITATORE WHERE E_Mail = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, email);
-            ResultSet rs = ps.executeQuery();
+    public Visitatore getByEmail(String email) {
+        try (var ps = DAOUtils.prepare(connection, Queries.VISITATORE_GET_BY_EMAIL, email);
+             var rs = ps.executeQuery()) {
             if (rs.next()) return map(rs);
+        } catch (SQLException e) {
+            throw new DAOException("Errore getByEmail visitatore", e);
         }
         return null;
     }
 
-    public List<Visitatore> getAll() throws SQLException {
-        List<Visitatore> list = new ArrayList<>();
-        String sql = "SELECT * FROM VISITATORE";
-        try (Connection con = DBConnection.getConnection();
-             Statement st = con.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
+    public List<Visitatore> getAll() {
+        var list = new ArrayList<Visitatore>();
+        try (var ps = DAOUtils.prepare(connection, Queries.VISITATORE_GET_ALL);
+             var rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) {
+            throw new DAOException("Errore getAll visitatori", e);
         }
         return list;
     }
 
-    // ------------------------------------------------------------------ //
-    // UPDATE                                                               //
-    // ------------------------------------------------------------------ //
-
-    public boolean update(Visitatore v) throws SQLException {
-        String sql = "UPDATE VISITATORE SET E_Mail=?, Password=?, Nome=?, Cognome=?, CodiceFiscale=? " +
-                     "WHERE AccountID=?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, v.getEmail());
-            ps.setString(2, v.getPassword());
-            ps.setString(3, v.getNome());
-            ps.setString(4, v.getCognome());
-            ps.setString(5, v.getCodiceFiscale());
-            ps.setInt(6, v.getAccountID());
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    // ------------------------------------------------------------------ //
-    // DELETE                                                               //
-    // ------------------------------------------------------------------ //
-
-    public boolean delete(int accountID) throws SQLException {
-        String sql = "DELETE FROM VISITATORE WHERE AccountID = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setInt(1, accountID);
-            return ps.executeUpdate() > 0;
-        }
-    }
-
-    // ------------------------------------------------------------------ //
-    // LOGIN                                                                //
-    // ------------------------------------------------------------------ //
-
-    public Visitatore login(String email, String password) throws SQLException {
-        String sql = "SELECT * FROM VISITATORE WHERE E_Mail = ? AND Password = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, email);
-            ps.setString(2, password);
-            ResultSet rs = ps.executeQuery();
+    public Visitatore login(String email, String password) {
+        try (var ps = DAOUtils.prepare(connection, Queries.VISITATORE_LOGIN, email, password);
+             var rs = ps.executeQuery()) {
             if (rs.next()) return map(rs);
+        } catch (SQLException e) {
+            throw new DAOException("Errore login visitatore", e);
         }
         return null;
     }
 
-    // ------------------------------------------------------------------ //
-    // MAPPING                                                              //
-    // ------------------------------------------------------------------ //
+    public boolean update(Visitatore v) {
+        try (var ps = DAOUtils.prepare(connection, Queries.VISITATORE_UPDATE,
+                v.getEmail(), v.getPassword(), v.getNome(), v.getCognome(),
+                v.getCodiceFiscale(), v.getAccountID())) {
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore update visitatore", e);
+        }
+    }
+
+    public boolean delete(int accountID) {
+        try (var ps = DAOUtils.prepare(connection, Queries.VISITATORE_DELETE, accountID)) {
+            return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore delete visitatore", e);
+        }
+    }
 
     private Visitatore map(ResultSet rs) throws SQLException {
         return new Visitatore(

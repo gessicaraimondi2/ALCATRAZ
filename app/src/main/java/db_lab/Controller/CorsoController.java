@@ -4,7 +4,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import db_lab.App;
 import db_lab.data.Corso;
-import db_lab.model.Model;
+import db_lab.data.DAOCorso;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -12,76 +12,98 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * GET    /api/corsi                  → tutti
- * GET    /api/corsi?educatore=M001   → filtro educatore
- * POST   /api/corsi                  → inserisci
- * PUT    /api/corsi/{id}             → aggiorna titolo/descrizione
- * DELETE /api/corsi/{id}             → elimina
+ * GET    /api/corsi                   → lista tutti (loggato)
+ * GET    /api/corsi?educatore=MAT     → filtra per educatore (admin)
+ * GET    /api/corsi/{id}              → singolo (admin)
+ * POST   /api/corsi                   → inserisci (admin)
+ * PUT    /api/corsi/{id}              → aggiorna (admin)
+ * DELETE /api/corsi/{id}              → elimina (admin)
  */
 public class CorsoController implements HttpHandler {
 
-    private final Model model;
+    private final DAOCorso daoCorso;
 
-    public CorsoController(Model model) {
-        this.model = model;
+    public CorsoController(DAOCorso daoCorso) {
+        this.daoCorso = daoCorso;
     }
 
     @Override
     public void handle(HttpExchange ex) throws IOException {
         if (App.handleCors(ex)) return;
-        if (!LoginController.isAdmin(ex)) { App.sendError(ex, 403, "Accesso negato"); return; }
 
-        String path   = ex.getRequestURI().getPath();
-        String method = ex.getRequestMethod().toUpperCase();
-        String[] segs = path.split("/");
-        boolean hasSub = segs.length > 3 && !segs[3].isEmpty();
+        String   path   = ex.getRequestURI().getPath();
+        String   method = ex.getRequestMethod().toUpperCase();
+        String[] segs   = path.split("/");
+        boolean  hasSub = segs.length > 3 && !segs[3].isEmpty();
+
+        boolean isAdmin    = LoginController.isAdmin(ex);
+        boolean isLoggedIn = LoginController.getSession(ex) != null;
+
+        if (!isLoggedIn) { App.sendError(ex, 401, "Non autenticato"); return; }
 
         try {
             switch (method) {
+
                 case "GET" -> {
-                    String query = ex.getRequestURI().getQuery();
-                    List<Corso> lista;
-                    if (query != null && query.startsWith("educatore=")) {
-                        lista = model.getCorsiByEducatore(query.substring(10));
+                    if (hasSub) {
+                        if (!isAdmin) { App.sendError(ex, 403, "Accesso negato"); return; }
+                        int codice;
+                        try { codice = Integer.parseInt(segs[3]); }
+                        catch (NumberFormatException e) { App.sendError(ex, 400, "ID non valido"); return; }
+                        Corso c = daoCorso.getByCodice(codice);
+                        if (c == null) { App.sendError(ex, 404, "Corso non trovato"); return; }
+                        App.sendJson(ex, 200, toJson(c));
                     } else {
-                        lista = model.getTuttiCorsi();
+                        String query = ex.getRequestURI().getQuery();
+                        if (query != null && query.startsWith("educatore=")) {
+                            if (!isAdmin) { App.sendError(ex, 403, "Accesso negato"); return; }
+                            App.sendJson(ex, 200, toJsonArray(daoCorso.getByEducatore(query.substring(10))));
+                        } else {
+                            // Lista corsi visibile a tutti gli utenti loggati
+                            App.sendJson(ex, 200, toJsonArray(daoCorso.getAll()));
+                        }
                     }
-                    App.sendJson(ex, 200, toJsonArray(lista));
                 }
+
                 case "POST" -> {
+                    if (!isAdmin) { App.sendError(ex, 403, "Accesso negato"); return; }
                     Map<String, String> b = App.parseJson(App.readBody(ex));
-                    Corso c = new Corso(
-                        0,
-                        b.getOrDefault("titolo", ""),
-                        b.getOrDefault("descrizione", ""),
-                        LocalDate.parse(b.getOrDefault("dataInizio", LocalDate.now().toString())),
-                        LocalDate.parse(b.getOrDefault("dataFine",   LocalDate.now().toString())),
-                        Corso.Tipologia.valueOf(b.getOrDefault("tipologia", "Professionale")),
-                        0,
-                        b.getOrDefault("matricolaEducatore", "")
-                    );
-                    boolean ok = model.inserisciCorso(c);
+                    boolean ok = daoCorso.insert(fromMap(b, LoginController.getAccountId(ex)));
                     if (ok) App.sendOk(ex, "");
                     else    App.sendError(ex, 500, "Errore inserimento");
                 }
+
                 case "PUT" -> {
+                    if (!isAdmin) { App.sendError(ex, 403, "Accesso negato"); return; }
                     if (!hasSub) { App.sendError(ex, 400, "ID mancante"); return; }
-                    int id = Integer.parseInt(segs[3]);
-                    Corso c = model.getCorso(id);
+                    int codice;
+                    try { codice = Integer.parseInt(segs[3]); }
+                    catch (NumberFormatException e) { App.sendError(ex, 400, "ID non valido"); return; }
+                    Corso c = daoCorso.getByCodice(codice);
                     if (c == null) { App.sendError(ex, 404, "Corso non trovato"); return; }
                     Map<String, String> b = App.parseJson(App.readBody(ex));
                     if (b.containsKey("titolo"))      c.setTitolo(b.get("titolo"));
                     if (b.containsKey("descrizione")) c.setDescrizione(b.get("descrizione"));
-                    boolean ok = model.aggiornaCorso(c);
+                    if (b.containsKey("dataInizio"))  c.setDataInizio(LocalDate.parse(b.get("dataInizio")));
+                    if (b.containsKey("dataFine"))    c.setDataFine(LocalDate.parse(b.get("dataFine")));
+                    if (b.containsKey("tipologia"))   c.setTipologia(Corso.Tipologia.valueOf(b.get("tipologia")));
+                    if (b.containsKey("matricola"))   c.setMatricola(b.get("matricola"));
+                    boolean ok = daoCorso.update(c);
                     if (ok) App.sendOk(ex, "");
                     else    App.sendError(ex, 500, "Errore aggiornamento");
                 }
+
                 case "DELETE" -> {
+                    if (!isAdmin) { App.sendError(ex, 403, "Accesso negato"); return; }
                     if (!hasSub) { App.sendError(ex, 400, "ID mancante"); return; }
-                    boolean ok = model.eliminaCorso(Integer.parseInt(segs[3]));
+                    int codice;
+                    try { codice = Integer.parseInt(segs[3]); }
+                    catch (NumberFormatException e) { App.sendError(ex, 400, "ID non valido"); return; }
+                    boolean ok = daoCorso.delete(codice);
                     if (ok) App.sendOk(ex, "");
                     else    App.sendError(ex, 404, "Corso non trovato");
                 }
+
                 default -> App.sendError(ex, 405, "Metodo non consentito");
             }
         } catch (Exception e) {
@@ -89,15 +111,16 @@ public class CorsoController implements HttpHandler {
         }
     }
 
+    // "id" usato dall'HTML: tuttiCorsi.forEach(c => mapCorsi[c.id] = c)
     static String toJson(Corso c) {
         return "{" +
-            "\"id\":"              + c.getCodiceCorso()               + "," +
-            "\"titolo\":\""        + App.escJson(c.getTitolo())       + "\"," +
-            "\"descrizione\":\""   + App.escJson(c.getDescrizione())  + "\"," +
-            "\"tipologia\":\""     + c.getTipologia()                 + "\"," +
-            "\"dataInizio\":\""    + c.getDataInizio()                + "\"," +
-            "\"dataFine\":\""      + c.getDataFine()                  + "\"," +
-            "\"educatore\":\""     + App.escJson(c.getMatricola())    + "\"" +
+            "\"id\":"            + c.getCodiceCorso()              + "," +
+            "\"titolo\":\""      + App.escJson(c.getTitolo())      + "\"," +
+            "\"descrizione\":\"" + App.escJson(c.getDescrizione()) + "\"," +
+            "\"dataInizio\":\""  + c.getDataInizio()               + "\"," +
+            "\"dataFine\":\""    + c.getDataFine()                 + "\"," +
+            "\"tipologia\":\""   + c.getTipologia().name()         + "\"," +
+            "\"matricola\":\""   + App.escJson(c.getMatricola())   + "\"" +
             "}";
     }
 
@@ -108,5 +131,18 @@ public class CorsoController implements HttpHandler {
             sb.append(toJson(lista.get(i)));
         }
         return sb.append("]").toString();
+    }
+
+    private Corso fromMap(Map<String, String> b, int adminId) {
+        return new Corso(
+            0, // CodiceCorso auto-generato dal DB
+            b.getOrDefault("titolo",      ""),
+            b.getOrDefault("descrizione", ""),
+            LocalDate.parse(b.getOrDefault("dataInizio", LocalDate.now().toString())),
+            LocalDate.parse(b.getOrDefault("dataFine",   LocalDate.now().toString())),
+            Corso.Tipologia.valueOf(b.getOrDefault("tipologia", "Professionale")),
+            adminId,
+            b.getOrDefault("matricola", null)
+        );
     }
 }

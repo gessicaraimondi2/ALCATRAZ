@@ -1,82 +1,74 @@
 package db_lab.data;
 
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class DAOPersonale {
 
-    public boolean insert(Personale p) throws SQLException {
-        String sql = "INSERT INTO PERSONALE (Matricola, Nome, Cognome, Ruolo, DataAssunzione, AccountID) " +
-                     "VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, p.getMatricola());
-            ps.setString(2, p.getNome());
-            ps.setString(3, p.getCognome());
-            ps.setString(4, p.getRuolo().name());
-            ps.setDate(5, Date.valueOf(p.getDataAssunzione()));
-            ps.setInt(6, p.getAccountID());
+    private final Connection connection;
+
+    public DAOPersonale(Connection connection) {
+        this.connection = connection;
+    }
+
+    public boolean insert(Personale p) {
+        try (var ps = DAOUtils.prepare(connection, Queries.PERSONALE_INSERT,
+                p.getMatricola(), p.getNome(), p.getCognome(),
+                p.getRuolo().name(), Date.valueOf(p.getDataAssunzione()), p.getAccountID())) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore insert personale", e);
         }
     }
 
-    public Personale getByMatricola(String matricola) throws SQLException {
-        String sql = "SELECT * FROM PERSONALE WHERE Matricola = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, matricola);
-            ResultSet rs = ps.executeQuery();
+    public Personale getByMatricola(String matricola) {
+        try (var ps = DAOUtils.prepare(connection, Queries.PERSONALE_GET_BY_MATRICOLA, matricola);
+             var rs = ps.executeQuery()) {
             if (rs.next()) return map(rs);
+        } catch (SQLException e) {
+            throw new DAOException("Errore getByMatricola personale", e);
         }
         return null;
     }
 
-    public List<Personale> getAll() throws SQLException {
-        List<Personale> list = new ArrayList<>();
-        String sql = "SELECT * FROM PERSONALE";
-        try (Connection con = DBConnection.getConnection();
-             Statement st = con.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
+    public List<Personale> getAll() {
+        var list = new ArrayList<Personale>();
+        try (var ps = DAOUtils.prepare(connection, Queries.PERSONALE_GET_ALL);
+             var rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) {
+            throw new DAOException("Errore getAll personale", e);
         }
         return list;
     }
 
-    public List<Personale> getByRuolo(Personale.Ruolo ruolo) throws SQLException {
-        List<Personale> list = new ArrayList<>();
-        String sql = "SELECT * FROM PERSONALE WHERE Ruolo = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, ruolo.name());
-            ResultSet rs = ps.executeQuery();
+    public List<Personale> getByRuolo(Personale.Ruolo ruolo) {
+        var list = new ArrayList<Personale>();
+        try (var ps = DAOUtils.prepare(connection, Queries.PERSONALE_GET_BY_RUOLO, ruolo.name());
+             var rs = ps.executeQuery()) {
             while (rs.next()) list.add(map(rs));
+        } catch (SQLException e) {
+            throw new DAOException("Errore getByRuolo personale", e);
         }
         return list;
     }
 
-    public boolean update(Personale p) throws SQLException {
-        String sql = "UPDATE PERSONALE SET Nome=?, Cognome=?, Ruolo=?, DataAssunzione=?, AccountID=? " +
-                     "WHERE Matricola=?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, p.getNome());
-            ps.setString(2, p.getCognome());
-            ps.setString(3, p.getRuolo().name());
-            ps.setDate(4, Date.valueOf(p.getDataAssunzione()));
-            ps.setInt(5, p.getAccountID());
-            ps.setString(6, p.getMatricola());
+    public boolean update(Personale p) {
+        try (var ps = DAOUtils.prepare(connection, Queries.PERSONALE_UPDATE,
+                p.getNome(), p.getCognome(), p.getRuolo().name(),
+                Date.valueOf(p.getDataAssunzione()), p.getAccountID(), p.getMatricola())) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore update personale", e);
         }
     }
 
-    public boolean delete(String matricola) throws SQLException {
-        String sql = "DELETE FROM PERSONALE WHERE Matricola = ?";
-        try (Connection con = DBConnection.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, matricola);
+    public boolean delete(String matricola) {
+        try (var ps = DAOUtils.prepare(connection, Queries.PERSONALE_DELETE, matricola)) {
             return ps.executeUpdate() > 0;
+        } catch (SQLException e) {
+            throw new DAOException("Errore delete personale", e);
         }
     }
 

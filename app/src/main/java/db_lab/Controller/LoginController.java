@@ -3,32 +3,32 @@ package db_lab.Controller;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import db_lab.App;
-import db_lab.data.*;
-import db_lab.model.Model;
+import db_lab.data.DAOAmministratore;
+import db_lab.data.DAOVisitatore;
+import db_lab.data.Amministratore;
+import db_lab.data.Visitatore;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * POST /api/login
- * Body JSON: { "email": "...", "password": "...", "ruolo": "visitatore"|"amministratore" }
- * Risposta:  { "ok": true, "ruolo": "...", "nome": "...", "token": "..." }
- *         o  { "ok": false, "message": "..." }
+ * LoginController — riscritto senza Model/DBModel.
  *
- * La sessione è gestita con un token in memoria (Map statica) che viene
- * restituito al client e inviato come header Authorization nelle richieste successive.
+ * Riceve direttamente i DAO di cui ha bisogno invece di passare
+ * per l'interfaccia Model che era solo un pass-through.
  */
 public class LoginController implements HttpHandler {
 
-    private final Model model;
+    private final DAOAmministratore daoAmministratore;
+    private final DAOVisitatore     daoVisitatore;
 
-    // Token → ruolo:accountID  (es. "visitatore:3")
-    // Mappa statica condivisa tra tutti i controller per verificare l'autenticazione
+    // Token → "ruolo:accountID" — condivisa tra tutti i Controller
     public static final ConcurrentHashMap<String, String> SESSIONS = new ConcurrentHashMap<>();
 
-    public LoginController(Model model) {
-        this.model = model;
+    public LoginController(DAOAmministratore daoAmministratore, DAOVisitatore daoVisitatore) {
+        this.daoAmministratore = daoAmministratore;
+        this.daoVisitatore     = daoVisitatore;
     }
 
     @Override
@@ -41,9 +41,9 @@ public class LoginController implements HttpHandler {
         }
 
         Map<String, String> body = App.parseJson(App.readBody(ex));
-        String email  = body.getOrDefault("email", "").trim();
-        String pw     = body.getOrDefault("password", "").trim();
-        String ruolo  = body.getOrDefault("ruolo", "visitatore").trim();
+        String email = body.getOrDefault("email",    "").trim();
+        String pw    = body.getOrDefault("password", "").trim();
+        String ruolo = body.getOrDefault("ruolo",    "visitatore").trim();
 
         if (email.isEmpty() || pw.isEmpty()) {
             App.sendError(ex, 400, "Email e password obbligatorie");
@@ -52,10 +52,10 @@ public class LoginController implements HttpHandler {
 
         try {
             if ("amministratore".equalsIgnoreCase(ruolo)) {
-                Amministratore a = model.loginAmministratore(email, pw);
+                Amministratore a = daoAmministratore.login(email, pw);
                 if (a == null) { App.sendError(ex, 401, "Credenziali errate"); return; }
 
-                String token = generateToken();
+                String token = java.util.UUID.randomUUID().toString();
                 SESSIONS.put(token, "amministratore:" + a.getAccountID());
 
                 App.sendJson(ex, 200,
@@ -64,10 +64,10 @@ public class LoginController implements HttpHandler {
                     ",\"token\":\"" + token + "\"}");
 
             } else {
-                Visitatore v = model.loginVisitatore(email, pw);
+                Visitatore v = daoVisitatore.login(email, pw);
                 if (v == null) { App.sendError(ex, 401, "Credenziali errate"); return; }
 
-                String token = generateToken();
+                String token = java.util.UUID.randomUUID().toString();
                 SESSIONS.put(token, "visitatore:" + v.getAccountID());
 
                 App.sendJson(ex, 200,
@@ -81,26 +81,19 @@ public class LoginController implements HttpHandler {
         }
     }
 
-    // ── Utility ──────────────────────────────────────────────────────────
+    // ── Utility di sessione — usate dagli altri Controller ────────────
 
-    private static String generateToken() {
-        return java.util.UUID.randomUUID().toString();
-    }
-
-    /** Restituisce "visitatore:ID" o "amministratore:ID" dal token, null se non valido. */
     public static String getSession(HttpExchange ex) {
         String auth = ex.getRequestHeaders().getFirst("Authorization");
         if (auth == null || !auth.startsWith("Bearer ")) return null;
         return SESSIONS.get(auth.substring(7).trim());
     }
 
-    /** Ritorna true se la sessione è di un amministratore. */
     public static boolean isAdmin(HttpExchange ex) {
         String s = getSession(ex);
         return s != null && s.startsWith("amministratore:");
     }
 
-    /** Estrae l'accountID dalla sessione (-1 se assente). */
     public static int getAccountId(HttpExchange ex) {
         String s = getSession(ex);
         if (s == null) return -1;
