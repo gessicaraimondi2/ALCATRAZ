@@ -59,7 +59,6 @@ public class CorsoController implements HttpHandler {
                             if (!isAdmin) { App.sendError(ex, 403, "Accesso negato"); return; }
                             App.sendJson(ex, 200, toJsonArray(daoCorso.getByEducatore(query.substring(10))));
                         } else {
-                            // Lista corsi visibile a tutti gli utenti loggati
                             App.sendJson(ex, 200, toJsonArray(daoCorso.getAll()));
                         }
                     }
@@ -67,8 +66,13 @@ public class CorsoController implements HttpHandler {
 
                 case "POST" -> {
                     if (!isAdmin) { App.sendError(ex, 403, "Accesso negato"); return; }
+
                     Map<String, String> b = App.parseJson(App.readBody(ex));
-                    boolean ok = daoCorso.insert(fromMap(b, LoginController.getAccountId(ex)));
+
+                    // ✔️ QUI LA MODIFICA: recuperiamo l'AccountID dell'admin loggato
+                    int adminId = LoginController.getAccountId(ex);
+
+                    boolean ok = daoCorso.insert(fromMap(b, adminId));
                     if (ok) App.sendOk(ex, "");
                     else    App.sendError(ex, 500, "Errore inserimento");
                 }
@@ -111,7 +115,6 @@ public class CorsoController implements HttpHandler {
         }
     }
 
-    // "id" usato dall'HTML: tuttiCorsi.forEach(c => mapCorsi[c.id] = c)
     static String toJson(Corso c) {
         return "{" +
             "\"id\":"            + c.getCodiceCorso()              + "," +
@@ -135,7 +138,7 @@ public class CorsoController implements HttpHandler {
 
     private Corso fromMap(Map<String, String> b, int adminId) {
         return new Corso(
-            0, // CodiceCorso auto-generato dal DB
+            0,
             b.getOrDefault("titolo",      ""),
             b.getOrDefault("descrizione", ""),
             LocalDate.parse(b.getOrDefault("dataInizio", LocalDate.now().toString())),

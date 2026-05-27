@@ -61,7 +61,7 @@ public class PersonaleController implements HttpHandler {
                         b.getOrDefault("cognome",   ""),
                         Personale.Ruolo.valueOf(b.getOrDefault("ruolo", "Guardia")),
                         LocalDate.parse(b.getOrDefault("dataAssunzione", LocalDate.now().toString())),
-                        0
+                        LoginController.getAccountId(ex)
                     );
                     boolean ok = daoPersonale.insert(p);
                     if (ok) App.sendOk(ex, "");

@@ -523,14 +523,13 @@ HAVING TotaleProvvedimenti > 0;
 # ---------------------------------------------------------------------- #
 # SQL Query Operations (Op1 – Op13)                                      #
 # ---------------------------------------------------------------------- #
-
 # Op1 - Registrare un nuovo utente (visitatore)
-# INSERT INTO VISITATORE (AccountID, E_Mail, Password, DataCreazione, Nome, Cognome, CodiceFiscale)
-# VALUES (?, ?, ?, ?, ?, ?, ?);
+# INSERT INTO VISITATORE (E_Mail, Password, DataCreazione, Nome, Cognome, CodiceFiscale)
+# VALUES (?, ?, ?, ?, ?, ?);
 
 # Op2 - Richiedere prenotazione di una visita
-# INSERT INTO PRENOTAZIONE (IDPrenotazione, NumeroAutorizzazione, TipoAutorizzazione, Data, Eff_AccountID, MatricolaDetenuto, MotivoRifiuto, EsitoPrenotazione)
-# VALUES (?, ?, ?, ?, ?, ?, NULL, 'In attesa');
+# INSERT INTO PRENOTAZIONE (NumeroAutorizzazione, TipoAutorizzazione, Data, Eff_AccountID, MatricolaDetenuto, MotivoRifiuto, EsitoPrenotazione)
+# VALUES (?, ?, ?, ?, ?, NULL, 'In attesa');
 
 # Op3 - Visualizzare l'esito della prenotazione
 # SELECT EsitoPrenotazione, MotivoRifiuto
@@ -563,11 +562,11 @@ HAVING TotaleProvvedimenti > 0;
 # WHERE c.NumeroCella = ? AND c.NumeroSezione = ?
 # GROUP BY c.NumeroCella, c.CapienzaMax, s.NomeSezione;
 #
-# INSERT INTO DETENUTO(MatricolaDetenuto, Nome, Cognome, DataDiNascita, CodiceFiscale, DataIngresso, DurataPena, Reato, StatoDellaPena, NumeroCella, NumeroSezione, AccountID)
+# INSERT INTO DETENUTO (MatricolaDetenuto, Nome, Cognome, DataDiNascita, CodiceFiscale, DataIngresso, DurataPena, Reato, StatoDellaPena, AccountID, NumeroSezione, NumeroCella)
 # VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 # Op6 - Registrare un nuovo membro del personale
-# INSERT INTO PERSONALE(Matricola, Nome, Cognome, Ruolo, DataAssunzione, AccountID)
+# INSERT INTO PERSONALE (Matricola, Nome, Cognome, Ruolo, DataAssunzione, AccountID)
 # VALUES (?, ?, ?, ?, ?, ?);
 
 # Op7 - Assegnare una guardia a una o più sezioni
@@ -584,14 +583,14 @@ HAVING TotaleProvvedimenti > 0;
 
 # Op9 - Iscrivere un detenuto a un corso
 # INSERT INTO Iscrizione (MatricolaDetenuto, CodiceCorso, Esito)
-# VALUES (?, ?, NULL);
+# VALUES (?, ?, 'In corso');
 
 # Op10 - Registrare una visita a un detenuto (conferma/rifiuto prenotazione)
 # UPDATE PRENOTAZIONE
 # SET EsitoPrenotazione = ?, MotivoRifiuto = ?
 # WHERE IDPrenotazione = ?;
 #
-# INSERT INTO VISITA (NumeroVisita, IDPrenotazione, Data, Orario, AccountID)
+# INSERT INTO VISITA (IDPrenotazione, Data, Orario, AccountID, EsitoVisita)
 # SELECT ?, ?, ?, ?, ?
 # FROM PRENOTAZIONE
 # WHERE IDPrenotazione = ? AND EsitoPrenotazione = 'Confermata';

@@ -1,12 +1,11 @@
 package db_lab.data;
 
 /**
- * Tutte le query SQL di ALCATRAZ in costanti.
+ * Tutte le query SQL di ALCATRAZ — versione corretta.
  *
- * Vantaggi:
- *   - Le SQL sono in un posto solo — facile trovarle e modificarle
- *   - I DAO diventano solo "esecutori" senza SQL inline
- *   - Errori di sintassi SQL si trovano subito invece che a runtime
+ * Ogni query è allineata al metodo DAO che la usa:
+ *   - numero di ? == numero di parametri passati in DAOUtils.prepare(...)
+ *   - nomi colonne == nomi letti nel metodo map() del DAO corrispondente
  */
 public final class Queries {
 
@@ -14,6 +13,8 @@ public final class Queries {
     // AMMINISTRATORI                                                      //
     // ------------------------------------------------------------------ //
 
+    // DAOAmministratore.insert() passa: email, password, nome, cognome, matricola  (5 params)
+    // DataCreazione gestita con CURRENT_DATE → solo 5 ? ✓
     public static final String AMMINISTRATORE_INSERT = """
         INSERT INTO AMMINISTRATORE (E_Mail, Password, DataCreazione, Nome, Cognome, Matricola)
         VALUES (?, ?, CURRENT_DATE, ?, ?, ?)
@@ -31,6 +32,7 @@ public final class Queries {
         SELECT * FROM AMMINISTRATORE WHERE E_Mail = ? AND Password = ?
         """;
 
+    // DAOAmministratore.update() passa: email, password, nome, cognome, matricola, accountID (6 params)
     public static final String AMMINISTRATORE_UPDATE = """
         UPDATE AMMINISTRATORE
         SET E_Mail=?, Password=?, Nome=?, Cognome=?, Matricola=?
@@ -42,12 +44,14 @@ public final class Queries {
         """;
 
     // ------------------------------------------------------------------ //
-    // VISITATORI                                                         //
+    // VISITATORI                                                          //
     // ------------------------------------------------------------------ //
 
+    // FIX: DAOVisitatore.insert() passa DataCreazione esplicitamente (6 params)
+    // → rimosso CURRENT_DATE, aggiunto ? al posto suo
     public static final String VISITATORE_INSERT = """
         INSERT INTO VISITATORE (E_Mail, Password, DataCreazione, Nome, Cognome, CodiceFiscale)
-        VALUES (?, ?, CURRENT_DATE, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?)
         """;
 
     public static final String VISITATORE_GET_BY_ID = """
@@ -66,8 +70,10 @@ public final class Queries {
         SELECT * FROM VISITATORE WHERE E_Mail = ? AND Password = ?
         """;
 
+    // DAOVisitatore.update() passa: email, password, nome, cognome, codiceFiscale, accountID (6 params)
     public static final String VISITATORE_UPDATE = """
-        UPDATE VISITATORE SET E_Mail=?, Password=?, Nome=?, Cognome=?, CodiceFiscale=?
+        UPDATE VISITATORE
+        SET E_Mail=?, Password=?, Nome=?, Cognome=?, CodiceFiscale=?
         WHERE AccountID=?
         """;
 
@@ -76,46 +82,65 @@ public final class Queries {
         """;
 
     // ------------------------------------------------------------------ //
-    // DETENUTI                                                           //
+    // DETENUTI                                                            //
     // ------------------------------------------------------------------ //
 
+    // FIX TOTALE: la query originale aveva solo 8 colonne/param.
+    // DAODetenuto.insert() passa 12 valori:
+    //   matricolaDetenuto, nome, cognome, DataDiNascita, CodiceFiscale,
+    //   DataIngresso, DurataPena, Reato, StatoDellaPena, AccountID,
+    //   NumeroSezione, NumeroCella
+    // I nomi colonna devono corrispondere a quelli letti nel map() del DAO.
     public static final String DETENUTO_INSERT = """
-        INSERT INTO DETENUTO (Matricola, Nome, Cognome, DataNascita, Reato, Sezione, Cella, Stato)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO DETENUTO
+            (MatricolaDetenuto, Nome, Cognome, DataDiNascita, CodiceFiscale,
+             DataIngresso, DurataPena, Reato, StatoDellaPena, AccountID,
+             NumeroSezione, NumeroCella)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
+    // FIX: colonna PK è MatricolaDetenuto (non Matricola)
     public static final String DETENUTO_GET_BY_MATRICOLA = """
-        SELECT * FROM DETENUTO WHERE Matricola = ?
+        SELECT * FROM DETENUTO WHERE MatricolaDetenuto = ?
         """;
 
     public static final String DETENUTO_GET_ALL = """
         SELECT * FROM DETENUTO
         """;
 
+    // FIX: NumeroSezione / NumeroCella (non Sezione / Cella)
     public static final String DETENUTO_GET_BY_CELLA = """
-        SELECT * FROM DETENUTO WHERE Sezione = ? AND Cella = ?
+        SELECT * FROM DETENUTO WHERE NumeroSezione = ? AND NumeroCella = ?
         """;
 
     public static final String DETENUTO_GET_BY_SEZIONE = """
-        SELECT * FROM DETENUTO WHERE Sezione = ?
+        SELECT * FROM DETENUTO WHERE NumeroSezione = ?
         """;
 
+    // FIX: DAODetenuto.update() passa 11 valori:
+    //   nome, cognome, DataDiNascita, CodiceFiscale, DataIngresso, DurataPena,
+    //   Reato, StatoDellaPena, NumeroSezione, NumeroCella, MatricolaDetenuto (WHERE)
     public static final String DETENUTO_UPDATE = """
-        UPDATE DETENUTO SET Nome=?, Cognome=?, DataNascita=?, Reato=?, Sezione=?, Cella=?, Stato=?
-        WHERE Matricola=?
+        UPDATE DETENUTO
+        SET Nome=?, Cognome=?, DataDiNascita=?, CodiceFiscale=?, DataIngresso=?,
+            DurataPena=?, Reato=?, StatoDellaPena=?, NumeroSezione=?, NumeroCella=?
+        WHERE MatricolaDetenuto=?
         """;
 
     public static final String DETENUTO_DELETE = """
-        DELETE FROM DETENUTO WHERE Matricola = ?
+        DELETE FROM DETENUTO WHERE MatricolaDetenuto = ?
         """;
 
     // ------------------------------------------------------------------ //
-    // PERSONALE                                                          //
+    // PERSONALE                                                           //
     // ------------------------------------------------------------------ //
 
+    // FIX: DAOPersonale.insert() passa 6 valori:
+    //   matricola, nome, cognome, ruolo, DataAssunzione, AccountID
+    // La versione originale aveva "Sezione" al posto di DataAssunzione + AccountID
     public static final String PERSONALE_INSERT = """
-        INSERT INTO PERSONALE (Matricola, Nome, Cognome, Ruolo, Sezione)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO PERSONALE (Matricola, Nome, Cognome, Ruolo, DataAssunzione, AccountID)
+        VALUES (?, ?, ?, ?, ?, ?)
         """;
 
     public static final String PERSONALE_GET_BY_MATRICOLA = """
@@ -130,8 +155,13 @@ public final class Queries {
         SELECT * FROM PERSONALE WHERE Ruolo = ?
         """;
 
+    // FIX: DAOPersonale.update() passa 6 valori:
+    //   nome, cognome, ruolo, DataAssunzione, AccountID, matricola (WHERE)
+    // La versione originale aveva "Sezione" e non aveva DataAssunzione / AccountID
     public static final String PERSONALE_UPDATE = """
-        UPDATE PERSONALE SET Nome=?, Cognome=?, Ruolo=?, Sezione=? WHERE Matricola=?
+        UPDATE PERSONALE
+        SET Nome=?, Cognome=?, Ruolo=?, DataAssunzione=?, AccountID=?
+        WHERE Matricola=?
         """;
 
     public static final String PERSONALE_DELETE = """
@@ -139,36 +169,46 @@ public final class Queries {
         """;
 
     // ------------------------------------------------------------------ //
-    // PRENOTAZIONI                                                       //
+    // PRENOTAZIONI                                                        //
     // ------------------------------------------------------------------ //
 
+    // FIX TOTALE: DAOPrenotazione.insert() passa 7 valori:
+    //   numeroAutorizzazione, tipoAutorizzazione, Data, Eff_AccountID,
+    //   MatricolaDetenuto, MotivoRifiuto, EsitoPrenotazione
+    // La versione originale aveva colonne e parametri completamente diversi.
     public static final String PRENOTAZIONE_INSERT = """
-        INSERT INTO PRENOTAZIONE (AccountID, MatricolaDetenuto, DataRichiesta, DataVisita, Esito, Motivo)
-        VALUES (?, ?, CURRENT_DATE, ?, 'IN_ATTESA', NULL)
+        INSERT INTO PRENOTAZIONE
+            (NumeroAutorizzazione, TipoAutorizzazione, Data, Eff_AccountID,
+             MatricolaDetenuto, MotivoRifiuto, EsitoPrenotazione)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         """;
 
     public static final String PRENOTAZIONE_GET_BY_ID = """
         SELECT * FROM PRENOTAZIONE WHERE IDPrenotazione = ?
         """;
 
+    // FIX: la FK visitatore è Eff_AccountID (non AccountID)
     public static final String PRENOTAZIONE_GET_BY_VISITATORE = """
-        SELECT * FROM PRENOTAZIONE WHERE AccountID = ?
+        SELECT * FROM PRENOTAZIONE WHERE Eff_AccountID = ?
         """;
 
     public static final String PRENOTAZIONE_GET_BY_DETENUTO = """
         SELECT * FROM PRENOTAZIONE WHERE MatricolaDetenuto = ?
         """;
 
+    // FIX: il valore DB è "In attesa" (con spazio, non 'IN_ATTESA')
     public static final String PRENOTAZIONE_GET_IN_ATTESA = """
-        SELECT * FROM PRENOTAZIONE WHERE Esito = 'IN_ATTESA'
+        SELECT * FROM PRENOTAZIONE WHERE EsitoPrenotazione = 'In attesa'
         """;
 
     public static final String PRENOTAZIONE_GET_ALL = """
         SELECT * FROM PRENOTAZIONE
         """;
 
+    // DAOPrenotazione.aggiornaEsito() passa: esito, motivoRifiuto, idPrenotazione (3 params) ✓
     public static final String PRENOTAZIONE_UPDATE_ESITO = """
-        UPDATE PRENOTAZIONE SET Esito=?, Motivo=? WHERE IDPrenotazione=?
+        UPDATE PRENOTAZIONE SET EsitoPrenotazione=?, MotivoRifiuto=?
+        WHERE IDPrenotazione=?
         """;
 
     public static final String PRENOTAZIONE_DELETE = """
@@ -176,12 +216,15 @@ public final class Queries {
         """;
 
     // ------------------------------------------------------------------ //
-    // VISITE                                                             //
+    // VISITE                                                              //
     // ------------------------------------------------------------------ //
 
+    // FIX: DAOVisita.insert() passa 5 valori:
+    //   idPrenotazione, Data (Date), Orario (Time), AccountID, EsitoVisita
+    // La versione originale aveva solo 2 ? e colonna unica "DataOra"
     public static final String VISITA_INSERT = """
-        INSERT INTO VISITA (IDPrenotazione, DataOra, Esito)
-        VALUES (?, ?, 'IN_CORSO')
+        INSERT INTO VISITA (IDPrenotazione, Data, Orario, AccountID, EsitoVisita)
+        VALUES (?, ?, ?, ?, ?)
         """;
 
     public static final String VISITA_GET_BY_ID = """
@@ -196,12 +239,14 @@ public final class Queries {
         SELECT * FROM VISITA
         """;
 
+    // EsitoVisita è salvato con .name() dell'enum → "Effettuata" (case-sensitive)
     public static final String VISITA_GET_EFFETTUATE = """
-        SELECT * FROM VISITA WHERE Esito = 'EFFETTUATA'
+        SELECT * FROM VISITA WHERE EsitoVisita = 'Effettuata'
         """;
 
+    // DAOVisita.aggiornaEsito() passa: esito, numeroVisita (2 params) ✓
     public static final String VISITA_UPDATE_ESITO = """
-        UPDATE VISITA SET Esito=? WHERE NumeroVisita=?
+        UPDATE VISITA SET EsitoVisita=? WHERE NumeroVisita=?
         """;
 
     public static final String VISITA_DELETE = """
@@ -209,109 +254,134 @@ public final class Queries {
         """;
 
     // ------------------------------------------------------------------ //
-    // PROVVEDIMENTI                                                      //
+    // PROVVEDIMENTI                                                       //
     // ------------------------------------------------------------------ //
 
+    // FIX: DAOProvvedimento.insert() passa 5 valori:
+    //   tipo, motivazione, DataEmissione, MatricolaDetenuto, Matricola(guardia)
+    // La versione originale aveva solo 3 ? e colonna "Descrizione" (non Motivazione)
     public static final String PROVVEDIMENTO_INSERT = """
-        INSERT INTO PROVVEDIMENTO (MatricolaDetenuto, Tipo, Descrizione, Data)
-        VALUES (?, ?, ?, CURRENT_DATE)
-        """;
-
-    public static final String PROVVEDIMENTO_GET_BY_ID = """
-        SELECT * FROM PROVVEDIMENTO WHERE NumeroProv = ?
-        """;
-
-    public static final String PROVVEDIMENTO_GET_BY_DETENUTO = """
-        SELECT * FROM PROVVEDIMENTO WHERE MatricolaDetenuto = ?
-        """;
-
-    public static final String PROVVEDIMENTO_GET_BY_TIPO = """
-        SELECT * FROM PROVVEDIMENTO WHERE Tipo = ?
-        """;
-
-    public static final String PROVVEDIMENTO_GET_ALL = """
-        SELECT * FROM PROVVEDIMENTO
-        """;
-
-    public static final String PROVVEDIMENTO_DELETE = """
-        DELETE FROM PROVVEDIMENTO WHERE NumeroProv = ?
-        """;
-
-    // ------------------------------------------------------------------ //
-    // CORSI                                                              //
-    // ------------------------------------------------------------------ //
-
-    public static final String CORSO_INSERT = """
-        INSERT INTO CORSO (Nome, Descrizione, MatricolaEducatore, DataInizio, DataFine)
+        INSERT INTO PROVVEDIMENTO_DISCIPLINARE (Tipo, Motivazione, DataEmissione, MatricolaDetenuto, Matricola)
         VALUES (?, ?, ?, ?, ?)
         """;
 
+    public static final String PROVVEDIMENTO_GET_BY_ID = """
+        SELECT * FROM PROVVEDIMENTO_DISCIPLINARE WHERE NumeroProv = ?
+        """;
+
+    public static final String PROVVEDIMENTO_GET_BY_DETENUTO = """
+        SELECT * FROM PROVVEDIMENTO_DISCIPLINARE WHERE MatricolaDetenuto = ?
+        """;
+
+    public static final String PROVVEDIMENTO_GET_BY_TIPO = """
+        SELECT * FROM PROVVEDIMENTO_DISCIPLINARE WHERE Tipo = ?
+        """;
+
+    public static final String PROVVEDIMENTO_GET_ALL = """
+        SELECT * FROM PROVVEDIMENTO_DISCIPLINARE
+        """;
+
+    public static final String PROVVEDIMENTO_DELETE = """
+        DELETE FROM PROVVEDIMENTO_DISCIPLINARE WHERE NumeroProv = ?
+        """;
+
+    // ------------------------------------------------------------------ //
+    // CORSI                                                               //
+    // ------------------------------------------------------------------ //
+
+    // FIX: DAOCorso.insert() passa 7 valori:
+    //   titolo, descrizione, DataInizio, DataFine, tipologia, AccountID, Matricola
+    // La versione originale aveva 5 ? con "Nome" e "MatricolaEducatore" (nomi errati)
+    public static final String CORSO_INSERT = """
+        INSERT INTO CORSO_DI_REINSERIMENTO (Titolo, Descrizione, DataInizio, DataFine, Tipologia, AccountID, Matricola)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """;
+
     public static final String CORSO_GET_BY_ID = """
-        SELECT * FROM CORSO WHERE CodiceCorso = ?
+        SELECT * FROM CORSO_DI_REINSERIMENTO WHERE CodiceCorso = ?
         """;
 
     public static final String CORSO_GET_ALL = """
-        SELECT * FROM CORSO
+        SELECT * FROM CORSO_DI_REINSERIMENTO
         """;
 
+    // FIX: la FK educatore si chiama Matricola (non MatricolaEducatore)
     public static final String CORSO_GET_BY_EDUCATORE = """
-        SELECT * FROM CORSO WHERE MatricolaEducatore = ?
+        SELECT * FROM CORSO_DI_REINSERIMENTO WHERE Matricola = ?
         """;
 
+    // FIX: DAOCorso.update() passa 7 valori:
+    //   titolo, descrizione, DataInizio, DataFine, tipologia, Matricola, CodiceCorso (WHERE)
     public static final String CORSO_UPDATE = """
-        UPDATE CORSO SET Nome=?, Descrizione=?, MatricolaEducatore=?, DataInizio=?, DataFine=?
+        UPDATE CORSO_DI_REINSERIMENTO
+        SET Titolo=?, Descrizione=?, DataInizio=?, DataFine=?, Tipologia=?, Matricola=?
         WHERE CodiceCorso=?
         """;
 
     public static final String CORSO_DELETE = """
-        DELETE FROM CORSO WHERE CodiceCorso = ?
+        DELETE FROM CORSO_DI_REINSERIMENTO WHERE CodiceCorso = ?
         """;
 
     // ------------------------------------------------------------------ //
-    // ISCRIZIONI                                                         //
+    // ISCRIZIONI                                                          //
     // ------------------------------------------------------------------ //
 
+    // DAOIscrizione.insert() passa: matricolaDetenuto, codiceCorso (2 params) ✓
+    // Esito iniziale impostato a 'In corso' (valore DB dal toDBString())
     public static final String ISCRIZIONE_INSERT = """
-        INSERT INTO ISCRIZIONE (MatricolaDetenuto, CodiceCorso, Esito)
-        VALUES (?, ?, 'IN_CORSO')
+        INSERT INTO Iscrizione  (MatricolaDetenuto, CodiceCorso, Esito)
+        VALUES (?, ?, 'In corso')
         """;
 
     public static final String ISCRIZIONE_GET_BY_DETENUTO = """
-        SELECT * FROM ISCRIZIONE WHERE MatricolaDetenuto = ?
+        SELECT * FROM Iscrizione  WHERE MatricolaDetenuto = ?
         """;
 
     public static final String ISCRIZIONE_GET_BY_CORSO = """
-        SELECT * FROM ISCRIZIONE WHERE CodiceCorso = ?
+        SELECT * FROM Iscrizione  WHERE CodiceCorso = ?
         """;
 
+    // DAOIscrizione.updateEsito() passa: esito, matricolaDetenuto, codiceCorso (3 params) ✓
     public static final String ISCRIZIONE_UPDATE_ESITO = """
-        UPDATE ISCRIZIONE SET Esito=? WHERE MatricolaDetenuto=? AND CodiceCorso=?
+        UPDATE Iscrizione  SET Esito=? WHERE MatricolaDetenuto=? AND CodiceCorso=?
         """;
 
     public static final String ISCRIZIONE_DELETE = """
-        DELETE FROM ISCRIZIONE WHERE MatricolaDetenuto=? AND CodiceCorso=?
+        DELETE FROM Iscrizione  WHERE MatricolaDetenuto=? AND CodiceCorso=?
         """;
 
     // ------------------------------------------------------------------ //
-    // STATISTICHE                                                        //
+    // STATISTICHE                                                         //
     // ------------------------------------------------------------------ //
 
+    // FIX: alias corretti per corrispondere a rs.getDouble("TassoPartecipazione_Pct")
     public static final String STAT_TASSO_PARTECIPAZIONE = """
-        SELECT COUNT(*) * 1.0 / (SELECT COUNT(*) FROM DETENUTO) FROM ISCRIZIONE
-        WHERE Esito != 'RITIRATO'
+        SELECT
+            COUNT(DISTINCT i.MatricolaDetenuto) AS DetenutiIscritti,
+            COUNT(DISTINCT d.MatricolaDetenuto) AS TotaleDetenuti,
+            ROUND(100.0 * COUNT(DISTINCT i.MatricolaDetenuto)
+                / COUNT(DISTINCT d.MatricolaDetenuto), 2) AS TassoPartecipazione_Pct
+        FROM DETENUTO d
+        LEFT JOIN Iscrizione i
+            ON d.MatricolaDetenuto = i.MatricolaDetenuto
+        AND i.Esito = 'In corso';
         """;
 
+    // FIX: alias corretto per rs.getDouble("MediaDetenuti_Per_Sezione")
     public static final String STAT_MEDIA_DETENUTI_PER_SEZIONE = """
-        SELECT AVG(cnt) FROM (
-            SELECT COUNT(*) AS cnt FROM DETENUTO GROUP BY Sezione
-        ) t
+        SELECT AVG(cnt) AS MediaDetenuti_Per_Sezione
+        FROM (SELECT COUNT(*) AS cnt FROM DETENUTO GROUP BY NumeroSezione) t
         """;
 
+    // FIX: alias corretto per rs.getInt("Totale")
     public static final String STAT_PRENOTAZIONI_IN_ATTESA = """
-        SELECT COUNT(*) FROM PRENOTAZIONE WHERE Esito = 'IN_ATTESA'
+        SELECT COUNT(*) AS Totale 
+        FROM PRENOTAZIONE
+        WHERE EsitoPrenotazione = 'In attesa'
         """;
 
+    // FIX: colonna StatoDellaPena e alias Totale per rs.getString/getInt nel DAO
     public static final String STAT_DETENUTI_PER_STATO = """
-        SELECT Stato, COUNT(*) AS totale FROM DETENUTO GROUP BY Stato
+        SELECT StatoDellaPena, COUNT(*) AS Totale FROM DETENUTO GROUP BY StatoDellaPena
         """;
 }

@@ -31,7 +31,7 @@ public class App {
         // ── Connessione DB — aperta una volta sola ──────────────────────
         Connection connection;
         try {
-            connection = DAOUtils.localMySQLConnection("alcatraz", "root", "Tina123!");
+            connection = DAOUtils.localMySQLConnection("alcatraz", "root", "BananaInPigiama!2");
             System.out.println("[DB] Connesso a MySQL.");
         } catch (Exception e) {
             System.err.println("[ERRORE] Impossibile connettersi: " + e.getMessage());
