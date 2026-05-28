@@ -136,7 +136,7 @@ public class VisitaController implements HttpHandler {
             LocalDate.parse(b.getOrDefault("data",    LocalDate.now().toString())),
             LocalTime.parse(b.getOrDefault("orario",  "00:00:00")),
             accountId,
-            Visita.EsitoVisita.valueOf(b.getOrDefault("esitoVisita", "Regolare"))
+            Visita.EsitoVisita.valueOf(b.getOrDefault("esitoVisita", "Effettuata"))
         );
     }
 }

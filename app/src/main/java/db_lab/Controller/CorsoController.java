@@ -5,9 +5,11 @@ import com.sun.net.httpserver.HttpHandler;
 import db_lab.App;
 import db_lab.data.Corso;
 import db_lab.data.DAOCorso;
+import db_lab.data.DAOException;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 
@@ -69,29 +71,102 @@ public class CorsoController implements HttpHandler {
 
                     Map<String, String> b = App.parseJson(App.readBody(ex));
 
-                    // ✔️ QUI LA MODIFICA: recuperiamo l'AccountID dell'admin loggato
+                    // FIX: validazione campi obbligatori prima di toccare il DB
+                    String titolo     = b.get("titolo");
+                    String descrizione = b.get("descrizione");
+                    String dataInizioStr = b.get("dataInizio");
+                    String dataFineStr   = b.get("dataFine");
+                    String tipologiaStr  = b.get("tipologia");
+                    String matricola     = b.get("matricola");   // FK → PERSONALE (NOT NULL nel DDL)
+
+                    if (titolo == null || titolo.isBlank()) {
+                        App.sendError(ex, 400, "Campo obbligatorio mancante: titolo"); return;
+                    }
+                    if (descrizione == null || descrizione.isBlank()) {
+                        App.sendError(ex, 400, "Campo obbligatorio mancante: descrizione"); return;
+                    }
+                    if (dataInizioStr == null || dataFineStr == null) {
+                        App.sendError(ex, 400, "Campi obbligatori mancanti: dataInizio / dataFine"); return;
+                    }
+                    // FIX principale: matricola educatore obbligatoria (NOT NULL + FK nel DB)
+                    if (matricola == null || matricola.isBlank()) {
+                        App.sendError(ex, 400, "Campo obbligatorio mancante: matricola (educatore)"); return;
+                    }
+
+                    // FIX: parse date con gestione errore esplicita
+                    LocalDate dataInizio, dataFine;
+                    try {
+                        dataInizio = LocalDate.parse(dataInizioStr);
+                        dataFine   = LocalDate.parse(dataFineStr);
+                    } catch (DateTimeParseException e) {
+                        App.sendError(ex, 400, "Formato data non valido (atteso: YYYY-MM-DD)"); return;
+                    }
+
+                    if (dataFine.isBefore(dataInizio)) {
+                        App.sendError(ex, 400, "dataFine non può essere precedente a dataInizio"); return;
+                    }
+
+                    // FIX: parse tipologia con gestione errore esplicita
+                    Corso.Tipologia tipologia;
+                    try {
+                        tipologia = Corso.Tipologia.valueOf(
+                            tipologiaStr != null ? tipologiaStr : "Professionale"
+                        );
+                    } catch (IllegalArgumentException e) {
+                        App.sendError(ex, 400, "Tipologia non valida. Valori ammessi: Professionale, Scolastico, Ricreativo"); return;
+                    }
+
                     int adminId = LoginController.getAccountId(ex);
 
-                    boolean ok = daoCorso.insert(fromMap(b, adminId));
-                    if (ok) App.sendOk(ex, "");
-                    else    App.sendError(ex, 500, "Errore inserimento");
+                    Corso corso = new Corso(0, titolo, descrizione, dataInizio, dataFine,
+                                           tipologia, adminId, matricola);
+
+                    boolean ok = daoCorso.insert(corso);
+                    if (ok) App.sendOk(ex, "Corso inserito con successo");
+                    else    App.sendError(ex, 500, "Inserimento non riuscito");
                 }
 
                 case "PUT" -> {
                     if (!isAdmin) { App.sendError(ex, 403, "Accesso negato"); return; }
                     if (!hasSub) { App.sendError(ex, 400, "ID mancante"); return; }
+
                     int codice;
                     try { codice = Integer.parseInt(segs[3]); }
                     catch (NumberFormatException e) { App.sendError(ex, 400, "ID non valido"); return; }
+
                     Corso c = daoCorso.getByCodice(codice);
                     if (c == null) { App.sendError(ex, 404, "Corso non trovato"); return; }
+
                     Map<String, String> b = App.parseJson(App.readBody(ex));
+
                     if (b.containsKey("titolo"))      c.setTitolo(b.get("titolo"));
                     if (b.containsKey("descrizione")) c.setDescrizione(b.get("descrizione"));
-                    if (b.containsKey("dataInizio"))  c.setDataInizio(LocalDate.parse(b.get("dataInizio")));
-                    if (b.containsKey("dataFine"))    c.setDataFine(LocalDate.parse(b.get("dataFine")));
-                    if (b.containsKey("tipologia"))   c.setTipologia(Corso.Tipologia.valueOf(b.get("tipologia")));
                     if (b.containsKey("matricola"))   c.setMatricola(b.get("matricola"));
+
+                    // FIX: parse date con gestione errore
+                    if (b.containsKey("dataInizio")) {
+                        try { c.setDataInizio(LocalDate.parse(b.get("dataInizio"))); }
+                        catch (DateTimeParseException e) {
+                            App.sendError(ex, 400, "Formato dataInizio non valido (atteso: YYYY-MM-DD)"); return;
+                        }
+                    }
+                    if (b.containsKey("dataFine")) {
+                        try { c.setDataFine(LocalDate.parse(b.get("dataFine"))); }
+                        catch (DateTimeParseException e) {
+                            App.sendError(ex, 400, "Formato dataFine non valido (atteso: YYYY-MM-DD)"); return;
+                        }
+                    }
+                    if (b.containsKey("tipologia")) {
+                        try { c.setTipologia(Corso.Tipologia.valueOf(b.get("tipologia"))); }
+                        catch (IllegalArgumentException e) {
+                            App.sendError(ex, 400, "Tipologia non valida. Valori ammessi: Professionale, Scolastico, Ricreativo"); return;
+                        }
+                    }
+
+                    if (c.getDataFine().isBefore(c.getDataInizio())) {
+                        App.sendError(ex, 400, "dataFine non può essere precedente a dataInizio"); return;
+                    }
+
                     boolean ok = daoCorso.update(c);
                     if (ok) App.sendOk(ex, "");
                     else    App.sendError(ex, 500, "Errore aggiornamento");
@@ -100,9 +175,11 @@ public class CorsoController implements HttpHandler {
                 case "DELETE" -> {
                     if (!isAdmin) { App.sendError(ex, 403, "Accesso negato"); return; }
                     if (!hasSub) { App.sendError(ex, 400, "ID mancante"); return; }
+
                     int codice;
                     try { codice = Integer.parseInt(segs[3]); }
                     catch (NumberFormatException e) { App.sendError(ex, 400, "ID non valido"); return; }
+
                     boolean ok = daoCorso.delete(codice);
                     if (ok) App.sendOk(ex, "");
                     else    App.sendError(ex, 404, "Corso non trovato");
@@ -110,10 +187,20 @@ public class CorsoController implements HttpHandler {
 
                 default -> App.sendError(ex, 405, "Metodo non consentito");
             }
+
+        } catch (DAOException e) {
+            // FIX: logga il vero errore SQL invece di nasconderlo
+            System.err.println("[CorsoController] DAOException: " + e.getMessage());
+            if (e.getCause() != null) System.err.println("  Causa: " + e.getCause().getMessage());
+            App.sendError(ex, 500, "Errore database: " + (e.getCause() != null ? e.getCause().getMessage() : e.getMessage()));
+
         } catch (Exception e) {
+            System.err.println("[CorsoController] Errore inatteso: " + e.getMessage());
             App.sendError(ex, 500, e.getMessage());
         }
     }
+
+    // ------------------------------------------------------------------ //
 
     static String toJson(Corso c) {
         return "{" +
@@ -123,6 +210,7 @@ public class CorsoController implements HttpHandler {
             "\"dataInizio\":\""  + c.getDataInizio()               + "\"," +
             "\"dataFine\":\""    + c.getDataFine()                 + "\"," +
             "\"tipologia\":\""   + c.getTipologia().name()         + "\"," +
+            "\"accountID\":"     + c.getAccountID()                + "," +
             "\"matricola\":\""   + App.escJson(c.getMatricola())   + "\"" +
             "}";
     }
@@ -134,18 +222,5 @@ public class CorsoController implements HttpHandler {
             sb.append(toJson(lista.get(i)));
         }
         return sb.append("]").toString();
-    }
-
-    private Corso fromMap(Map<String, String> b, int adminId) {
-        return new Corso(
-            0,
-            b.getOrDefault("titolo",      ""),
-            b.getOrDefault("descrizione", ""),
-            LocalDate.parse(b.getOrDefault("dataInizio", LocalDate.now().toString())),
-            LocalDate.parse(b.getOrDefault("dataFine",   LocalDate.now().toString())),
-            Corso.Tipologia.valueOf(b.getOrDefault("tipologia", "Professionale")),
-            adminId,
-            b.getOrDefault("matricola", null)
-        );
     }
 }
