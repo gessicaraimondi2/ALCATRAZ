@@ -52,6 +52,24 @@ public class PrenotazioneController implements HttpHandler {
                 int id = Integer.parseInt(segs[3]);
                 Map<String, String> b = App.parseJson(App.readBody(ex));
                 Prenotazione.EsitoPrenotazione esito = Prenotazione.EsitoPrenotazione.valueOf(b.get("esito"));
+
+                // Blocco isolamento: se si tenta di confermare, verifica la sezione del detenuto
+                if (esito == Prenotazione.EsitoPrenotazione.Confermata) {
+                    Prenotazione existing = daoPrenotazione.getByID(id);
+                    if (existing == null) { App.sendError(ex, 404, "Prenotazione non trovata"); return; }
+                    // Ricarica con join per avere NomeSezione aggiornato
+                    List<Prenotazione> tutte = daoPrenotazione.getAll();
+                    String nomeSezione = tutte.stream()
+                        .filter(p -> p.getIdPrenotazione() == id)
+                        .map(Prenotazione::getNomeSezione)
+                        .findFirst()
+                        .orElse(null);
+                    if ("Isolamento".equals(nomeSezione)) {
+                        App.sendError(ex, 400, "Il detenuto si trova in isolamento e non può ricevere visite");
+                        return;
+                    }
+                }
+
                 boolean ok = daoPrenotazione.aggiornaEsito(id, esito, b.getOrDefault("motivo", null));
                 if (ok) App.sendOk(ex, "");
                 else    App.sendError(ex, 404, "Prenotazione non trovata");
@@ -115,13 +133,15 @@ public class PrenotazioneController implements HttpHandler {
 
     static String toJson(Prenotazione p) {
         return "{" +
-            "\"id\":"                   + p.getIdPrenotazione()                + "," +
-            "\"tipoAutorizzazione\":\"" + App.escJson(p.getTipoAutorizzazione()) + "\"," +
-            "\"data\":\""               + p.getData()                          + "\"," +
-            "\"matricolaDetenuto\":\"" + App.escJson(p.getMatricolaDetenuto()) + "\"," +
-            "\"esito\":\""              + p.getEsitoPrenotazione()             + "\"," +
-            "\"motivoRifiuto\":"        + (p.getMotivoRifiuto() == null ? "null" :
-                                          "\"" + App.escJson(p.getMotivoRifiuto()) + "\"") +
+            "\"id\":"                    + p.getIdPrenotazione()                  + "," +
+            "\"tipoAutorizzazione\":\"" + App.escJson(p.getTipoAutorizzazione())  + "\"," +
+            "\"data\":\""                + p.getData()                            + "\"," +
+            "\"matricolaDetenuto\":\""  + App.escJson(p.getMatricolaDetenuto())   + "\"," +
+            "\"esito\":\""               + p.getEsitoPrenotazione()               + "\"," +
+            "\"motivoRifiuto\":"         + (p.getMotivoRifiuto() == null ? "null" :
+                                           "\"" + App.escJson(p.getMotivoRifiuto()) + "\"") + "," +
+            "\"nomeSezione\":"           + (p.getNomeSezione() == null ? "null" :
+                                           "\"" + App.escJson(p.getNomeSezione()) + "\"") +
             "}";
     }
 

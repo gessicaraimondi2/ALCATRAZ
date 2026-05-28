@@ -3,7 +3,9 @@ package db_lab.Controller;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import db_lab.App;
+import db_lab.data.DAODetenuto;
 import db_lab.data.DAOIscrizione;
+import db_lab.data.Detenuto;
 import db_lab.data.Iscrizione;
 
 import java.io.IOException;
@@ -19,10 +21,14 @@ import java.util.Map;
  */
 public class IscrizioneController implements HttpHandler {
 
-    private final DAOIscrizione daoIscrizione;
+    private static final String SEZIONE_ISOLAMENTO = "S03";
 
-    public IscrizioneController(DAOIscrizione daoIscrizione) {
+    private final DAOIscrizione daoIscrizione;
+    private final DAODetenuto   daoDetenuto;
+
+    public IscrizioneController(DAOIscrizione daoIscrizione, DAODetenuto daoDetenuto) {
         this.daoIscrizione = daoIscrizione;
+        this.daoDetenuto   = daoDetenuto;
     }
 
     @Override
@@ -47,9 +53,6 @@ public class IscrizioneController implements HttpHandler {
                 case "GET" -> {
                     String query = ex.getRequestURI().getQuery();
                     if (query != null && query.startsWith("detenuto=")) {
-                        // Visitatori loggati possono vedere le iscrizioni dei detenuti
-                        // per cui hanno una prenotazione confermata (accesso già verificato
-                        // a monte da DetenutoController prima di chiamare questo endpoint)
                         String mat = query.substring(9);
                         App.sendJson(ex, 200, toJsonArray(daoIscrizione.getByDetenuto(mat)));
                     } else if (query != null && query.startsWith("corso=")) {
@@ -65,11 +68,32 @@ public class IscrizioneController implements HttpHandler {
 
                 case "POST" -> {
                     if (!isAdmin) { App.sendError(ex, 403, "Accesso negato"); return; }
+
                     Map<String, String> b = App.parseJson(App.readBody(ex));
+
                     String mat = b.getOrDefault("matricolaDetenuto", "");
+                    if (mat.isBlank()) {
+                        App.sendError(ex, 400, "Campo obbligatorio mancante: matricolaDetenuto");
+                        return;
+                    }
+
                     int codice;
                     try { codice = Integer.parseInt(b.getOrDefault("codiceCorso", "0")); }
                     catch (NumberFormatException e) { App.sendError(ex, 400, "codiceCorso non valido"); return; }
+
+                    // ── CHECK ISOLAMENTO ────────────────────────────────────────
+                    Detenuto detenuto = daoDetenuto.getByMatricola(mat);
+                    if (detenuto == null) {
+                        App.sendError(ex, 404, "Detenuto non trovato");
+                        return;
+                    }
+                    if (SEZIONE_ISOLAMENTO.equals(detenuto.getNumeroSezione())) {
+                        App.sendError(ex, 409,
+                            "Impossibile iscrivere il detenuto: è attualmente in isolamento");
+                        return;
+                    }
+                    // ────────────────────────────────────────────────────────────
+
                     boolean ok = daoIscrizione.insert(mat, codice);
                     if (ok) App.sendOk(ex, "");
                     else    App.sendError(ex, 500, "Errore inserimento iscrizione");
@@ -110,7 +134,6 @@ public class IscrizioneController implements HttpHandler {
         }
     }
 
-    // "codiceCorso" e "esito" usati dall'HTML nel modal info detenuto
     static String toJson(Iscrizione i) {
         String esitoJson = i.getEsito() == null
             ? "null"

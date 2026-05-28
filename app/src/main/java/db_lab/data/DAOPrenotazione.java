@@ -103,7 +103,7 @@ public class DAOPrenotazione {
             case "Rifiutata"  -> Prenotazione.EsitoPrenotazione.Rifiutata;
             default -> throw new SQLException("EsitoPrenotazione sconosciuto: " + esito);
         };
-        return new Prenotazione(
+        Prenotazione p = new Prenotazione(
             rs.getInt("IDPrenotazione"),
             rs.getInt("NumeroAutorizzazione"),
             rs.getString("TipoAutorizzazione"),
@@ -113,5 +113,11 @@ public class DAOPrenotazione {
             rs.getString("MotivoRifiuto"),
             e
         );
+        // NomeSezione è presente solo nelle query con JOIN (getAll, getInAttesa)
+        // Per le altre query (getByID, getByVisitatore, ecc.) rimane null
+        try {
+            p.setNomeSezione(rs.getString("NomeSezione"));
+        } catch (SQLException ignored) {}
+        return p;
     }
 }

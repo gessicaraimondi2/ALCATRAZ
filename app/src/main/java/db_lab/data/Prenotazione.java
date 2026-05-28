@@ -26,6 +26,7 @@ public class Prenotazione {
     private String matricolaDetenuto;
     private String motivoRifiuto;       // nullable
     private EsitoPrenotazione esitoPrenotazione;
+    private String nomeSezione;         // nullable — popolato solo dalle query con JOIN
 
     public Prenotazione() {}
 
@@ -42,29 +43,32 @@ public class Prenotazione {
         this.esitoPrenotazione    = esitoPrenotazione;
     }
 
-    public int getIdPrenotazione()                              { return idPrenotazione; }
-    public void setIdPrenotazione(int idPrenotazione)           { this.idPrenotazione = idPrenotazione; }
+    public int getIdPrenotazione()                               { return idPrenotazione; }
+    public void setIdPrenotazione(int idPrenotazione)            { this.idPrenotazione = idPrenotazione; }
 
-    public int getNumeroAutorizzazione()                        { return numeroAutorizzazione; }
-    public void setNumeroAutorizzazione(int n)                  { this.numeroAutorizzazione = n; }
+    public int getNumeroAutorizzazione()                         { return numeroAutorizzazione; }
+    public void setNumeroAutorizzazione(int n)                   { this.numeroAutorizzazione = n; }
 
-    public String getTipoAutorizzazione()                       { return tipoAutorizzazione; }
-    public void setTipoAutorizzazione(String tipoAutorizzazione){ this.tipoAutorizzazione = tipoAutorizzazione; }
+    public String getTipoAutorizzazione()                        { return tipoAutorizzazione; }
+    public void setTipoAutorizzazione(String tipoAutorizzazione) { this.tipoAutorizzazione = tipoAutorizzazione; }
 
-    public LocalDate getData()                                  { return data; }
-    public void setData(LocalDate data)                         { this.data = data; }
+    public LocalDate getData()                                   { return data; }
+    public void setData(LocalDate data)                          { this.data = data; }
 
-    public int getEffAccountID()                                { return effAccountID; }
-    public void setEffAccountID(int effAccountID)               { this.effAccountID = effAccountID; }
+    public int getEffAccountID()                                 { return effAccountID; }
+    public void setEffAccountID(int effAccountID)                { this.effAccountID = effAccountID; }
 
-    public String getMatricolaDetenuto()                        { return matricolaDetenuto; }
-    public void setMatricolaDetenuto(String m)                  { this.matricolaDetenuto = m; }
+    public String getMatricolaDetenuto()                         { return matricolaDetenuto; }
+    public void setMatricolaDetenuto(String m)                   { this.matricolaDetenuto = m; }
 
-    public String getMotivoRifiuto()                            { return motivoRifiuto; }
-    public void setMotivoRifiuto(String motivoRifiuto)          { this.motivoRifiuto = motivoRifiuto; }
+    public String getMotivoRifiuto()                             { return motivoRifiuto; }
+    public void setMotivoRifiuto(String motivoRifiuto)           { this.motivoRifiuto = motivoRifiuto; }
 
-    public EsitoPrenotazione getEsitoPrenotazione()             { return esitoPrenotazione; }
-    public void setEsitoPrenotazione(EsitoPrenotazione e)       { this.esitoPrenotazione = e; }
+    public EsitoPrenotazione getEsitoPrenotazione()              { return esitoPrenotazione; }
+    public void setEsitoPrenotazione(EsitoPrenotazione e)        { this.esitoPrenotazione = e; }
+
+    public String getNomeSezione()                               { return nomeSezione; }
+    public void setNomeSezione(String nomeSezione)               { this.nomeSezione = nomeSezione; }
 
     @Override
     public String toString() {

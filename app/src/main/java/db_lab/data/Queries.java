@@ -13,8 +13,6 @@ public final class Queries {
     // AMMINISTRATORI                                                      //
     // ------------------------------------------------------------------ //
 
-    // DAOAmministratore.insert() passa: email, password, nome, cognome, matricola  (5 params)
-    // DataCreazione gestita con CURRENT_DATE → solo 5 ? ✓
     public static final String AMMINISTRATORE_INSERT = """
         INSERT INTO AMMINISTRATORE (E_Mail, Password, DataCreazione, Nome, Cognome, Matricola)
         VALUES (?, ?, CURRENT_DATE, ?, ?, ?)
@@ -32,7 +30,6 @@ public final class Queries {
         SELECT * FROM AMMINISTRATORE WHERE E_Mail = ? AND Password = ?
         """;
 
-    // DAOAmministratore.update() passa: email, password, nome, cognome, matricola, accountID (6 params)
     public static final String AMMINISTRATORE_UPDATE = """
         UPDATE AMMINISTRATORE
         SET E_Mail=?, Password=?, Nome=?, Cognome=?, Matricola=?
@@ -47,8 +44,6 @@ public final class Queries {
     // VISITATORI                                                          //
     // ------------------------------------------------------------------ //
 
-    // FIX: DAOVisitatore.insert() passa DataCreazione esplicitamente (6 params)
-    // → rimosso CURRENT_DATE, aggiunto ? al posto suo
     public static final String VISITATORE_INSERT = """
         INSERT INTO VISITATORE (E_Mail, Password, DataCreazione, Nome, Cognome, CodiceFiscale)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -70,7 +65,6 @@ public final class Queries {
         SELECT * FROM VISITATORE WHERE E_Mail = ? AND Password = ?
         """;
 
-    // DAOVisitatore.update() passa: email, password, nome, cognome, codiceFiscale, accountID (6 params)
     public static final String VISITATORE_UPDATE = """
         UPDATE VISITATORE
         SET E_Mail=?, Password=?, Nome=?, Cognome=?, CodiceFiscale=?
@@ -85,12 +79,6 @@ public final class Queries {
     // DETENUTI                                                            //
     // ------------------------------------------------------------------ //
 
-    // FIX TOTALE: la query originale aveva solo 8 colonne/param.
-    // DAODetenuto.insert() passa 12 valori:
-    //   matricolaDetenuto, nome, cognome, DataDiNascita, CodiceFiscale,
-    //   DataIngresso, DurataPena, Reato, StatoDellaPena, AccountID,
-    //   NumeroSezione, NumeroCella
-    // I nomi colonna devono corrispondere a quelli letti nel map() del DAO.
     public static final String DETENUTO_INSERT = """
         INSERT INTO DETENUTO
             (MatricolaDetenuto, Nome, Cognome, DataDiNascita, CodiceFiscale,
@@ -99,7 +87,6 @@ public final class Queries {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
-    // FIX: colonna PK è MatricolaDetenuto (non Matricola)
     public static final String DETENUTO_GET_BY_MATRICOLA = """
         SELECT * FROM DETENUTO WHERE MatricolaDetenuto = ?
         """;
@@ -108,7 +95,6 @@ public final class Queries {
         SELECT * FROM DETENUTO
         """;
 
-    // FIX: NumeroSezione / NumeroCella (non Sezione / Cella)
     public static final String DETENUTO_GET_BY_CELLA = """
         SELECT * FROM DETENUTO WHERE NumeroSezione = ? AND NumeroCella = ?
         """;
@@ -117,9 +103,6 @@ public final class Queries {
         SELECT * FROM DETENUTO WHERE NumeroSezione = ?
         """;
 
-    // FIX: DAODetenuto.update() passa 11 valori:
-    //   nome, cognome, DataDiNascita, CodiceFiscale, DataIngresso, DurataPena,
-    //   Reato, StatoDellaPena, NumeroSezione, NumeroCella, MatricolaDetenuto (WHERE)
     public static final String DETENUTO_UPDATE = """
         UPDATE DETENUTO
         SET Nome=?, Cognome=?, DataDiNascita=?, CodiceFiscale=?, DataIngresso=?,
@@ -135,9 +118,6 @@ public final class Queries {
     // PERSONALE                                                           //
     // ------------------------------------------------------------------ //
 
-    // FIX: DAOPersonale.insert() passa 6 valori:
-    //   matricola, nome, cognome, ruolo, DataAssunzione, AccountID
-    // La versione originale aveva "Sezione" al posto di DataAssunzione + AccountID
     public static final String PERSONALE_INSERT = """
         INSERT INTO PERSONALE (Matricola, Nome, Cognome, Ruolo, DataAssunzione, AccountID)
         VALUES (?, ?, ?, ?, ?, ?)
@@ -155,9 +135,6 @@ public final class Queries {
         SELECT * FROM PERSONALE WHERE Ruolo = ?
         """;
 
-    // FIX: DAOPersonale.update() passa 6 valori:
-    //   nome, cognome, ruolo, DataAssunzione, AccountID, matricola (WHERE)
-    // La versione originale aveva "Sezione" e non aveva DataAssunzione / AccountID
     public static final String PERSONALE_UPDATE = """
         UPDATE PERSONALE
         SET Nome=?, Cognome=?, Ruolo=?, DataAssunzione=?, AccountID=?
@@ -172,10 +149,6 @@ public final class Queries {
     // PRENOTAZIONI                                                        //
     // ------------------------------------------------------------------ //
 
-    // FIX TOTALE: DAOPrenotazione.insert() passa 7 valori:
-    //   numeroAutorizzazione, tipoAutorizzazione, Data, Eff_AccountID,
-    //   MatricolaDetenuto, MotivoRifiuto, EsitoPrenotazione
-    // La versione originale aveva colonne e parametri completamente diversi.
     public static final String PRENOTAZIONE_INSERT = """
         INSERT INTO PRENOTAZIONE
             (NumeroAutorizzazione, TipoAutorizzazione, Data, Eff_AccountID,
@@ -183,11 +156,11 @@ public final class Queries {
         VALUES (?, ?, ?, ?, ?, ?, ?)
         """;
 
+    // Lettura singola per ID — non necessita NomeSezione (usata solo per delete/check)
     public static final String PRENOTAZIONE_GET_BY_ID = """
         SELECT * FROM PRENOTAZIONE WHERE IDPrenotazione = ?
         """;
 
-    // FIX: la FK visitatore è Eff_AccountID (non AccountID)
     public static final String PRENOTAZIONE_GET_BY_VISITATORE = """
         SELECT * FROM PRENOTAZIONE WHERE Eff_AccountID = ?
         """;
@@ -196,16 +169,23 @@ public final class Queries {
         SELECT * FROM PRENOTAZIONE WHERE MatricolaDetenuto = ?
         """;
 
-    // FIX: il valore DB è "In attesa" (con spazio, non 'IN_ATTESA')
+    // JOIN con DETENUTO e SEZIONE per ottenere NomeSezione —
+    // usata da getInAttesa() e getAll() che popolano la dashboard admin
     public static final String PRENOTAZIONE_GET_IN_ATTESA = """
-        SELECT * FROM PRENOTAZIONE WHERE EsitoPrenotazione = 'In attesa'
+        SELECT p.*, s.NomeSezione
+        FROM PRENOTAZIONE p
+        JOIN DETENUTO d ON p.MatricolaDetenuto = d.MatricolaDetenuto
+        JOIN SEZIONE  s ON d.NumeroSezione     = s.NumeroSezione
+        WHERE p.EsitoPrenotazione = 'In attesa'
         """;
 
     public static final String PRENOTAZIONE_GET_ALL = """
-        SELECT * FROM PRENOTAZIONE
+        SELECT p.*, s.NomeSezione
+        FROM PRENOTAZIONE p
+        JOIN DETENUTO d ON p.MatricolaDetenuto = d.MatricolaDetenuto
+        JOIN SEZIONE  s ON d.NumeroSezione     = s.NumeroSezione
         """;
 
-    // DAOPrenotazione.aggiornaEsito() passa: esito, motivoRifiuto, idPrenotazione (3 params) ✓
     public static final String PRENOTAZIONE_UPDATE_ESITO = """
         UPDATE PRENOTAZIONE SET EsitoPrenotazione=?, MotivoRifiuto=?
         WHERE IDPrenotazione=?
@@ -219,9 +199,6 @@ public final class Queries {
     // VISITE                                                              //
     // ------------------------------------------------------------------ //
 
-    // FIX: DAOVisita.insert() passa 5 valori:
-    //   idPrenotazione, Data (Date), Orario (Time), AccountID, EsitoVisita
-    // La versione originale aveva solo 2 ? e colonna unica "DataOra"
     public static final String VISITA_INSERT = """
         INSERT INTO VISITA (IDPrenotazione, Data, Orario, AccountID, EsitoVisita)
         VALUES (?, ?, ?, ?, ?)
@@ -239,12 +216,10 @@ public final class Queries {
         SELECT * FROM VISITA
         """;
 
-    // EsitoVisita è salvato con .name() dell'enum → "Effettuata" (case-sensitive)
     public static final String VISITA_GET_EFFETTUATE = """
         SELECT * FROM VISITA WHERE EsitoVisita = 'Effettuata'
         """;
 
-    // DAOVisita.aggiornaEsito() passa: esito, numeroVisita (2 params) ✓
     public static final String VISITA_UPDATE_ESITO = """
         UPDATE VISITA SET EsitoVisita=? WHERE NumeroVisita=?
         """;
@@ -257,9 +232,6 @@ public final class Queries {
     // PROVVEDIMENTI                                                       //
     // ------------------------------------------------------------------ //
 
-    // FIX: DAOProvvedimento.insert() passa 5 valori:
-    //   tipo, motivazione, DataEmissione, MatricolaDetenuto, Matricola(guardia)
-    // La versione originale aveva solo 3 ? e colonna "Descrizione" (non Motivazione)
     public static final String PROVVEDIMENTO_INSERT = """
         INSERT INTO PROVVEDIMENTO_DISCIPLINARE (Tipo, Motivazione, DataEmissione, MatricolaDetenuto, Matricola)
         VALUES (?, ?, ?, ?, ?)
@@ -289,9 +261,6 @@ public final class Queries {
     // CORSI                                                               //
     // ------------------------------------------------------------------ //
 
-    // FIX: DAOCorso.insert() passa 7 valori:
-    //   titolo, descrizione, DataInizio, DataFine, tipologia, AccountID, Matricola
-    // La versione originale aveva 5 ? con "Nome" e "MatricolaEducatore" (nomi errati)
     public static final String CORSO_INSERT = """
         INSERT INTO CORSO_DI_REINSERIMENTO (Titolo, Descrizione, DataInizio, DataFine, Tipologia, AccountID, Matricola)
         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -305,13 +274,10 @@ public final class Queries {
         SELECT * FROM CORSO_DI_REINSERIMENTO
         """;
 
-    // FIX: la FK educatore si chiama Matricola (non MatricolaEducatore)
     public static final String CORSO_GET_BY_EDUCATORE = """
         SELECT * FROM CORSO_DI_REINSERIMENTO WHERE Matricola = ?
         """;
 
-    // FIX: DAOCorso.update() passa 7 valori:
-    //   titolo, descrizione, DataInizio, DataFine, tipologia, Matricola, CodiceCorso (WHERE)
     public static final String CORSO_UPDATE = """
         UPDATE CORSO_DI_REINSERIMENTO
         SET Titolo=?, Descrizione=?, DataInizio=?, DataFine=?, Tipologia=?, Matricola=?
@@ -326,35 +292,31 @@ public final class Queries {
     // ISCRIZIONI                                                          //
     // ------------------------------------------------------------------ //
 
-    // DAOIscrizione.insert() passa: matricolaDetenuto, codiceCorso (2 params) ✓
-    // Esito iniziale impostato a 'In corso' (valore DB dal toDBString())
     public static final String ISCRIZIONE_INSERT = """
-        INSERT INTO Iscrizione  (MatricolaDetenuto, CodiceCorso, Esito)
+        INSERT INTO Iscrizione (MatricolaDetenuto, CodiceCorso, Esito)
         VALUES (?, ?, 'In corso')
         """;
 
     public static final String ISCRIZIONE_GET_BY_DETENUTO = """
-        SELECT * FROM Iscrizione  WHERE MatricolaDetenuto = ?
+        SELECT * FROM Iscrizione WHERE MatricolaDetenuto = ?
         """;
 
     public static final String ISCRIZIONE_GET_BY_CORSO = """
-        SELECT * FROM Iscrizione  WHERE CodiceCorso = ?
+        SELECT * FROM Iscrizione WHERE CodiceCorso = ?
         """;
 
-    // DAOIscrizione.updateEsito() passa: esito, matricolaDetenuto, codiceCorso (3 params) ✓
     public static final String ISCRIZIONE_UPDATE_ESITO = """
-        UPDATE Iscrizione  SET Esito=? WHERE MatricolaDetenuto=? AND CodiceCorso=?
+        UPDATE Iscrizione SET Esito=? WHERE MatricolaDetenuto=? AND CodiceCorso=?
         """;
 
     public static final String ISCRIZIONE_DELETE = """
-        DELETE FROM Iscrizione  WHERE MatricolaDetenuto=? AND CodiceCorso=?
+        DELETE FROM Iscrizione WHERE MatricolaDetenuto=? AND CodiceCorso=?
         """;
 
     // ------------------------------------------------------------------ //
     // STATISTICHE                                                         //
     // ------------------------------------------------------------------ //
 
-    // FIX: alias corretti per corrispondere a rs.getDouble("TassoPartecipazione_Pct")
     public static final String STAT_TASSO_PARTECIPAZIONE = """
         SELECT
             COUNT(DISTINCT i.MatricolaDetenuto) AS DetenutiIscritti,
@@ -367,20 +329,17 @@ public final class Queries {
         AND i.Esito = 'In corso';
         """;
 
-    // FIX: alias corretto per rs.getDouble("MediaDetenuti_Per_Sezione")
     public static final String STAT_MEDIA_DETENUTI_PER_SEZIONE = """
         SELECT AVG(cnt) AS MediaDetenuti_Per_Sezione
         FROM (SELECT COUNT(*) AS cnt FROM DETENUTO GROUP BY NumeroSezione) t
         """;
 
-    // FIX: alias corretto per rs.getInt("Totale")
     public static final String STAT_PRENOTAZIONI_IN_ATTESA = """
-        SELECT COUNT(*) AS Totale 
+        SELECT COUNT(*) AS Totale
         FROM PRENOTAZIONE
         WHERE EsitoPrenotazione = 'In attesa'
         """;
 
-    // FIX: colonna StatoDellaPena e alias Totale per rs.getString/getInt nel DAO
     public static final String STAT_DETENUTI_PER_STATO = """
         SELECT StatoDellaPena, COUNT(*) AS Totale FROM DETENUTO GROUP BY StatoDellaPena
         """;

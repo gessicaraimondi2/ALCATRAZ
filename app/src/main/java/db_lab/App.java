@@ -13,14 +13,6 @@ import java.nio.file.*;
 import java.sql.Connection;
 import java.util.*;
 
-/**
- * App — avvia il server HTTP sulla porta 8080.
- *
- * Cambiamenti rispetto alla versione originale:
- *   - La connessione DB viene aperta UNA VOLTA SOLA qui e passata ai DAO
- *   - Eliminati Model, DBModel, MockedModel (erano solo pass-through)
- *   - Ogni Controller riceve solo i DAO di cui ha bisogno
- */
 public class App {
 
     static final int    PORT       = 8080;
@@ -28,7 +20,6 @@ public class App {
 
     public static void main(String[] args) throws Exception {
 
-        // ── Connessione DB — aperta una volta sola ──────────────────────
         Connection connection;
         try {
             connection = DAOUtils.localMySQLConnection("alcatraz", "root", "BananaInPigiama!2");
@@ -38,7 +29,6 @@ public class App {
             return;
         }
 
-        // ── DAO — creati una volta sola, passati ai Controller ──────────
         var daoAmministratore = new DAOAmministratore(connection);
         var daoVisitatore     = new DAOVisitatore(connection);
         var daoDetenuto       = new DAODetenuto(connection);
@@ -50,18 +40,17 @@ public class App {
         var daoIscrizione     = new DAOIscrizione(connection);
         var daoStatistiche    = new DAOStatistiche(connection);
 
-        // ── Server HTTP ─────────────────────────────────────────────────
         HttpServer server = HttpServer.create(new InetSocketAddress(PORT), 0);
 
         server.createContext("/", new StaticHandler());
 
         server.createContext("/api/login",         new LoginController(daoAmministratore, daoVisitatore));
         server.createContext("/api/register",      new RegisterController(daoVisitatore));
-        server.createContext("/api/detenuti", new DetenutoController(daoDetenuto, daoPrenotazione));
+        server.createContext("/api/detenuti",      new DetenutoController(daoDetenuto, daoPrenotazione));
         server.createContext("/api/prenotazioni",  new PrenotazioneController(daoPrenotazione));
         server.createContext("/api/personale",     new PersonaleController(daoPersonale));
         server.createContext("/api/corsi",         new CorsoController(daoCorso));
-        server.createContext("/api/iscrizioni",    new IscrizioneController(daoIscrizione));
+        server.createContext("/api/iscrizioni",    new IscrizioneController(daoIscrizione, daoDetenuto)); // ← daoDetenuto aggiunto
         server.createContext("/api/visite",        new VisitaController(daoVisita));
         server.createContext("/api/provvedimenti", new ProvvedimentoController(daoProvvedimento));
         server.createContext("/api/statistiche",   new StatisticheController(daoStatistiche));
@@ -71,7 +60,6 @@ public class App {
 
         System.out.println("Server avviato su http://localhost:" + PORT);
 
-        // Apri il browser automaticamente
         try {
             String os = System.getProperty("os.name").toLowerCase();
             if (os.contains("win"))       Runtime.getRuntime().exec("rundll32 url.dll,FileProtocolHandler http://localhost:" + PORT);
@@ -79,7 +67,6 @@ public class App {
             else                          Runtime.getRuntime().exec("xdg-open http://localhost:" + PORT);
         } catch (Exception ignored) {}
 
-        // Shutdown hook — chiude la connessione quando si ferma il server
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try { connection.close(); } catch (Exception ignored) {}
             server.stop(0);
