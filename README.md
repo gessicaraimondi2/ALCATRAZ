@@ -115,9 +115,3 @@ The following accounts are pre-loaded with the SQL seed data:
 ## 👩‍💻 Authors
 
 Gessica Raimondi, Valentina Severi — university project for the Databases.
-
----
-
-## 📄 License
-
-This project is distributed for educational purposes. You are free to modify and reuse it by citing the original source.
