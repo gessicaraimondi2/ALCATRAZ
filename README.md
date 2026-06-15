@@ -72,7 +72,7 @@ db_lab/
 ### 2️⃣ Clone or Download the Project
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/gessicaraimondi2/ALCATRAZ.git
 ```
 
 ### 3️⃣ Set Up the Database
