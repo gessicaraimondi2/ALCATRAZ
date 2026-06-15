@@ -1,6 +1,123 @@
-Il progetto consiste nella realizzazione di un sistema database a supporto di una piattaforma di intermediazione tra visitatori esterni e l'amministrazione di un istituto penitenziario. Il sistema prende il nome di Alcatraz e ha l'obiettivo di centralizzare e strutturare la gestione delle richieste di visita, delle autorizzazioni, del personale, dei detenuti e delle attività di reinserimento sociale organizzate dall'istituto.
-Il database non si limita a memorizzare dati anagrafici, ma modella l'intera struttura operativa dell'istituto: le sezioni detentive con le relative celle, l'assegnazione del personale, i corsi di reinserimento con i relativi esiti, i provvedimenti disciplinari e i vincoli di accesso che regolano le visite. Si è scelto di adottare un unico sistema informativo integrato, anziché basi di dati separate per visitatori e amministrazione, perché i dati gestiti dai due attori sono strettamente correlati: la valutazione di una prenotazione di visita, ad esempio, dipende dalla sezione in cui è detenuto il soggetto e dall'eventuale presenza di provvedimenti disciplinari attivi.
-Gli utenti del sistema sono di due tipologie:
-il visitatore è un soggetto esterno (familiare o conoscente autorizzato), che accede alla piattaforma per registrarsi, richiedere una visita e monitorarne l'esito. Una volta ottenuta l'autorizzazione, il visitatore può consultare informazioni aggregate sul percorso detentivo del detenuto che intende incontrare: il tempo residuo della pena, i corsi frequentati con il relativo esito e gli eventuali provvedimenti disciplinari. 
-l'amministratore dell'istituto, dispone di un accesso privilegiato che gli consente di gestire l'intera base di dati: registrare nuovi detenuti e assegnarli alle celle, gestire il personale, organizzare i corsi di reinserimento, approvare o rifiutare le prenotazioni di visita, e consultare statistiche aggregate sulla popolazione detenuta e sulla partecipazione alle attività.
-Il sistema informativo prevede quindi due interfacce client distinte, con livelli di accesso differenziati. Il client del visitatore è un'applicazione web pubblica, accessibile previa registrazione, progettata per guidare l'utente nelle sole operazioni consentite: la prenotazione di una visita e la consultazione delle informazioni aggregate autorizzate. Il client dell'amministratore è invece un'applicazione dedicata, ad accesso ristretto al solo personale dell'istituto, che espone le funzionalità complete di gestione della base di dati.
+# 🏛️ ALCATRAZ – Database Web Application
+
+A web application for managing a penitentiary facility, developed in Java with a MySQL database. The system supports two distinct user roles — visitors and administrators — providing differentiated interfaces for booking visits, managing inmates, staff, and rehabilitation activities.
+
+---
+
+## 🚀 Main Features
+
+* 👤 **Authentication** for administrators and registered visitors
+* 📅 **Visit booking** — visitors can request visits and track their outcome
+* 👁️ **Visitor dashboard** — view aggregate information on inmates (sentence progress, courses attended, disciplinary measures)
+* 🗂️ **Admin dashboard** — full CRUD access to inmates, cells, sections, staff, courses, enrollments, visits, bookings, and disciplinary measures
+* 📊 **Statistics** — aggregate views on the inmate population and rehabilitation activity participation
+* 🔒 **Role-based access control** — separate client interfaces with differentiated permissions
+
+---
+
+## 🧩 Technologies Used
+
+* **Backend:** Java, JDBC
+* **Frontend:** HTML5, CSS3, JavaScript (Fetch API)
+* **Database:** MySQL
+* **Build tool:** Gradle 8.7
+* **Dependencies:** Unit 4.13.2
+
+---
+
+## 🏗️ Architecture
+
+The application follows a layered architecture:
+
+```
+db_lab/
+├── App.java                  # HTTP server entry point (port 8080)
+├── Controller/               # HTTP handlers (one per entity)
+│   ├── LoginController.java
+│   ├── RegisterController.java
+│   ├── DetenutoController.java
+│   ├── PersonaleController.java
+│   ├── PrenotazioneController.java
+│   ├── VisitaController.java
+│   ├── ProvvedimentoController.java
+│   ├── CorsoController.java
+│   ├── IscrizioneController.java
+│   └── StatisticheController.java
+├── data/                     # DAO layer + model classes
+│   ├── Queries.java          # Centralized SQL queries
+│   ├── DAOUtils.java         # JDBC connection and utilities
+│   ├── DAO*.java             # One DAO per entity
+│   └── *.java                # Entity model classes (with enums)
+└── view/                     # Static frontend (served by the Java server)
+    ├── Index.html
+    ├── Login.html
+    ├── Register.html
+    ├── Dashboard-admin.html
+    ├── Dashboard-visitatore.html
+    ├── Prenotazione.html
+    ├── Statistiche.html
+    └── css/Style.css
+```
+
+---
+
+## ⚙️ Installation & Configuration
+
+### 1️⃣ Prerequisites
+
+* Java 17+
+* MySQL 
+* Gradle 8.7 
+
+### 2️⃣ Clone or Download the Project
+
+```bash
+git clone <repository-url>
+```
+
+### 3️⃣ Set Up the Database
+
+1. Open MySQL Workbench
+2. Create a new database named `alcatraz`
+3. Import the SQL file included in the project to create the schema and populate initial data
+
+### 4️⃣ Configure the Connection
+
+In `App.java`, update the connection credentials if needed:
+
+```java
+connection = DAOUtils.localMySQLConnection("alcatraz", "root", "<your-password>");
+```
+
+### 5️⃣ Build and Run
+
+```bash
+./gradlew run
+```
+
+The server starts on **http://localhost:8080** and opens the browser automatically.
+
+---
+
+## 🔐 Access Credentials
+
+The following accounts are pre-loaded with the SQL seed data:
+
+**👑 Administrator**
+* Email: `admin@alcatraz.it`
+* Password: *(see SQL seed file)*
+
+**👤 Visitor (test)**
+* Register via the public registration page at `http://localhost:8080/Register.html`
+
+---
+
+## 👩‍💻 Authors
+
+Gessica Raimondi, Valentina Severi — university project for the Databases.
+
+---
+
+## 📄 License
+
+This project is distributed for educational purposes. You are free to modify and reuse it by citing the original source.
