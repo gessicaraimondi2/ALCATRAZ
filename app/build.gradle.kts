@@ -25,3 +25,7 @@ tasks.compileJava {
 application {
     mainClass = "db_lab.App"
 }
+
+tasks.named<JavaExec>("run") {
+    workingDir = rootProject.projectDir
+}
